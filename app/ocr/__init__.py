@@ -4,6 +4,9 @@ Errors carry the API error code they map to (CLAUDE.md §4, §9).
 """
 
 import functools
+import math
+
+from pydantic import ValidationError
 
 NORMALISER_VERSION = "1.0.0"
 
@@ -25,10 +28,19 @@ class UnsupportedFormatError(OcrInputError):
 
 
 def as_number(value, what: str) -> float:
-    """A JSON number (not bool, not string) as float, else UnsupportedFormatError."""
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        raise UnsupportedFormatError(f"{what} must be a number, got {value!r}")
+    """A finite JSON number (not bool, not string) as float, else UnsupportedFormatError.
+    The offending value is not echoed: it may be OCR text (PII)."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+        raise UnsupportedFormatError(f"{what} must be a finite number, got {type(value).__name__}")
     return float(value)
+
+
+def describe_validation_error(exc: ValidationError) -> str:
+    """Field locations and messages only, without the input values (may hold PII)."""
+    return "; ".join(
+        f"{'.'.join(str(p) for p in err['loc']) or '<root>'}: {err['msg']}"
+        for err in exc.errors(include_input=False, include_url=False)
+    )
 
 
 def raises_unsupported_format(engine: str):
@@ -43,8 +55,12 @@ def raises_unsupported_format(engine: str):
                 return fn(*args, **kwargs)
             except UnsupportedFormatError:
                 raise
+            except ValidationError as exc:
+                raise UnsupportedFormatError(
+                    f"{engine} raw_output does not fit the normalised schema: "
+                    f"{describe_validation_error(exc)}"
+                ) from exc
             except (KeyError, IndexError, TypeError, ValueError, ZeroDivisionError) as exc:
-                # pydantic.ValidationError is a ValueError subclass.
                 raise UnsupportedFormatError(
                     f"{engine} raw_output is malformed: {type(exc).__name__}: {exc}"
                 ) from exc

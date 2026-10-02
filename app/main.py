@@ -1,8 +1,22 @@
-"""FastAPI app. Phase 1 exposes only a health check; routers arrive in phase 2."""
+"""FastAPI app: POST /documents, GET /documents/{id}. Search arrives in phase 4."""
 
-from fastapi import FastAPI
+import logging
+
+from fastapi import FastAPI, Request
+
+from app.api import documents
+from app.api.errors import error_response
+
+log = logging.getLogger(__name__)
 
 app = FastAPI(title="Document Ingestion & Embedding Pipeline")
+app.include_router(documents.router)
+
+
+@app.exception_handler(Exception)
+async def unhandled_error(request: Request, exc: Exception):
+    log.exception("unhandled error on %s %s", request.method, request.url.path)
+    return error_response("internal_server_error")
 
 
 @app.get("/health")

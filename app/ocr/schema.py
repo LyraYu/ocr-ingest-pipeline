@@ -22,9 +22,22 @@ class NormalisedLine(_Strict):
     confidence: Fraction | None
     confidence_source: Literal["engine_line", "mean_of_words"] | None
 
+    @field_validator("bbox", mode="before")
+    @classmethod
+    def _clamp(cls, bbox):
+        """Engines can report coordinates slightly off-page (skewed scans); clamp
+        each coordinate into [0, 1]. Non-numeric values are left for type validation."""
+        if isinstance(bbox, (list, tuple)):
+            return tuple(
+                min(max(v, 0.0), 1.0) if isinstance(v, (int, float)) and not isinstance(v, bool) else v
+                for v in bbox
+            )
+        return bbox
+
     @field_validator("bbox")
     @classmethod
     def _ordered(cls, bbox: tuple[float, float, float, float]):
+        # Checked after clamping: only a genuinely inverted box is rejected.
         x0, y0, x1, y1 = bbox
         if x0 > x1 or y0 > y1:
             raise ValueError(f"bbox must satisfy x0<=x1 and y0<=y1, got {list(bbox)}")

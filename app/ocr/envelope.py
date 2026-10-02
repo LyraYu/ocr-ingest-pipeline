@@ -10,7 +10,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, ValidationError
 
-from app.ocr import UnreadableFileError, UnsupportedFormatError
+from app.ocr import UnreadableFileError, UnsupportedFormatError, describe_validation_error
 from app.ocr.registry import get_engine
 from app.ocr.schema import SourceInfo
 
@@ -63,7 +63,7 @@ def validate_envelope(data: object) -> Envelope:
     try:
         envelope = Envelope.model_validate({**data, "source": source})
     except ValidationError as exc:
-        raise UnsupportedFormatError(f"envelope is invalid: {exc}") from exc
+        raise UnsupportedFormatError(f"envelope is invalid: {describe_validation_error(exc)}") from exc
 
     get_engine(envelope.ocr.engine).check_shape(envelope.raw_output)
     return envelope

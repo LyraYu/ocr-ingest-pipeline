@@ -17,10 +17,43 @@ def check_shape(raw_output: dict) -> None:
         raise UnsupportedFormatError("aws-textract raw_output.Blocks has no PAGE block")
 
 
-def _page_of(block: dict) -> int:
+def _page_field(block: dict) -> int | None:
+    """The block's own `Page`, None when absent (single-page sync responses omit it)."""
+    if "Page" not in block:
+        return None
     page = block["Page"]
     if isinstance(page, bool) or not isinstance(page, int) or page < 1:
         raise UnsupportedFormatError(f"aws-textract block Page must be an int >= 1, got {page!r}")
+    return page
+
+
+def _child_ids(block: dict) -> list[str]:
+    ids: list[str] = []
+    for rel in block.get("Relationships") or []:
+        if isinstance(rel, dict) and rel.get("Type") == "CHILD":
+            ids.extend(rel.get("Ids") or [])
+    return ids
+
+
+def _page_tree(page_blocks: list[dict]) -> tuple[list[int], dict[str, int]]:
+    """Page numbers of the PAGE blocks (own `Page`, else 1-based position) and a
+    map child block Id → page number from each PAGE block's CHILD relationships."""
+    numbers = [_page_field(b) or position for position, b in enumerate(page_blocks, start=1)]
+    if len(set(numbers)) != len(numbers):
+        raise UnsupportedFormatError(f"aws-textract PAGE blocks have duplicate page numbers {numbers}")
+    child_page = {child: number for b, number in zip(page_blocks, numbers) for child in _child_ids(b)}
+    return numbers, child_page
+
+
+def _page_of_line(block: dict, child_page: dict[str, int]) -> int:
+    """`Page` when present; else the PAGE block listing this LINE as a CHILD; else reject."""
+    page = _page_field(block)
+    if page is None:
+        page = child_page.get(block.get("Id"))
+    if page is None:
+        raise UnsupportedFormatError(
+            "aws-textract LINE block has no Page and is not a CHILD of any PAGE block"
+        )
     return page
 
 
@@ -44,12 +77,12 @@ def normalise(raw_output: dict) -> list[NormalisedPage]:
     check_shape(raw_output)
     blocks = [b for b in raw_output["Blocks"] if isinstance(b, dict)]
 
-    page_numbers = {_page_of(b) for b in blocks if b.get("BlockType") == "PAGE"}
+    numbers, child_page = _page_tree([b for b in blocks if b.get("BlockType") == "PAGE"])
     lines_by_page: dict[int, list[dict]] = defaultdict(list)
     for block in blocks:
         if block.get("BlockType") == "LINE":
-            lines_by_page[_page_of(block)].append(block)
-    page_numbers |= lines_by_page.keys()
+            lines_by_page[_page_of_line(block, child_page)].append(block)
+    page_numbers = set(numbers) | lines_by_page.keys()
 
     return [
         NormalisedPage(

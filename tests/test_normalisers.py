@@ -135,3 +135,54 @@ def test_normalise_envelope_builds_document(samples_by_engine, engine):
     assert doc.pages
     # Round-trips through JSON (this is what gets written to data/normalised/).
     assert type(doc).model_validate_json(doc.model_dump_json()) == doc
+
+
+def _azure_one_line(polygon: list[float]) -> dict:
+    return {"analyzeResult": {"content": "X", "pages": [{
+        "pageNumber": 1, "width": 10, "height": 20, "unit": "inch",
+        "lines": [{"content": "X", "polygon": polygon, "spans": [{"offset": 0, "length": 1}]}],
+        "words": [{"content": "X", "confidence": 0.9, "span": {"offset": 0, "length": 1}}],
+    }]}}
+
+
+def test_bbox_is_clamped_into_unit_square():
+    # x from -0.5 to 10.4 inch on a 10-inch page, y from -1 to 21 on a 20-inch page.
+    [page] = ENGINES["azure-document-intelligence"].normalise(
+        _azure_one_line([-0.5, -1, 10.4, -1, 10.4, 21, -0.5, 21])
+    )
+    assert page.lines[0].bbox == (0.0, 0.0, 1.0, 1.0)
+
+
+def test_inverted_bbox_is_rejected_after_clamping(samples_by_engine):
+    raw = copy.deepcopy(samples_by_engine["aws-textract"]["raw_output"])
+    line = next(b for b in raw["Blocks"] if b["BlockType"] == "LINE")
+    line["Geometry"]["BoundingBox"].update(Left=0.5, Width=-0.2)  # x1 = 0.3 < x0 = 0.5
+    with pytest.raises(UnsupportedFormatError, match="x0<=x1"):
+        ENGINES["aws-textract"].normalise(raw)
+
+
+def test_textract_page_from_block_tree_when_line_page_missing(samples_by_engine):
+    raw = copy.deepcopy(samples_by_engine["aws-textract"]["raw_output"])
+    lines = [b for b in raw["Blocks"] if b["BlockType"] == "LINE"]
+    for block in lines:
+        block.pop("Page")
+    [page] = ENGINES["aws-textract"].normalise(raw)
+    assert page.page_number == 1
+    assert len(page.lines) == len(lines) == 31
+
+
+def test_textract_page_from_position_when_page_block_has_no_page_either(samples_by_engine):
+    raw = copy.deepcopy(samples_by_engine["aws-textract"]["raw_output"])
+    for block in raw["Blocks"]:
+        block.pop("Page", None)
+    [page] = ENGINES["aws-textract"].normalise(raw)
+    assert page.page_number == 1 and len(page.lines) == 31
+
+
+def test_textract_line_without_page_or_parent_is_rejected(samples_by_engine):
+    raw = copy.deepcopy(samples_by_engine["aws-textract"]["raw_output"])
+    line = next(b for b in raw["Blocks"] if b["BlockType"] == "LINE")
+    line.pop("Page")
+    line["Id"] = "orphan-line"
+    with pytest.raises(UnsupportedFormatError, match="not a CHILD"):
+        ENGINES["aws-textract"].normalise(raw)
