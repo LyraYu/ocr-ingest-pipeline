@@ -68,3 +68,10 @@ def set_normalised_uri(conn: psycopg.Connection, document_id: UUID, uri: str) ->
         "update documents set normalised_storage_uri = %s, updated_at = now() where id = %s",
         (uri, document_id),
     )
+
+
+def set_document_type(conn: psycopg.Connection, document_id: UUID, document_type: str | None) -> None:
+    conn.execute(
+        "update documents set document_type = %s, updated_at = now() where id = %s",
+        (document_type, document_id),
+    )

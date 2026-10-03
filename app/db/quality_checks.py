@@ -1,6 +1,7 @@
 from uuid import UUID
 
 import psycopg
+from psycopg.types.json import Jsonb
 
 from app.db.connection import fetch_all
 
@@ -30,3 +31,32 @@ def failed_check_names(conn: psycopg.Connection, document_id: UUID) -> list[str]
         (document_id,),
     )
     return [r["check_name"] for r in rows]
+
+
+def replace(
+    conn: psycopg.Connection,
+    document_id: UUID,
+    run_id: UUID,
+    owned_names: list[str],
+    checks: list[dict],
+) -> None:
+    """Delete the document's checks whose name matches one of `owned_names` (SQL LIKE
+    patterns, e.g. 'field\\_%'), then insert `checks` (keys: check_name, passed,
+    severity, details, page_id optional). Each stage owns its check names, so
+    re-running one stage leaves the other stages' checks alone."""
+    conn.execute(
+        "delete from quality_checks where document_id = %s and check_name like any(%s)",
+        (document_id, owned_names),
+    )
+    with conn.cursor() as cur:
+        cur.executemany(
+            """
+            insert into quality_checks (document_id, page_id, check_name, passed, severity, details, run_id)
+            values (%s, %s, %s, %s, %s, %s, %s)
+            """,
+            [
+                (document_id, c.get("page_id"), c["check_name"], c["passed"], c["severity"],
+                 Jsonb(c.get("details") or {}), run_id)
+                for c in checks
+            ],
+        )

@@ -6,7 +6,10 @@ re-runnable on an existing document, and records its own document_stages row.
 
 Each stage body runs in one transaction: on failure its partial writes roll back,
 then the failed stage row and `documents.status = 'failed'` are written and
-`StageFailed` is raised.
+`StageFailed` is raised. The quality stage only flags: its own failure is recorded
+on its stage row but never fails the document.
+
+Each stage owns a set of quality_checks names and replaces only those on re-run.
 """
 
 import hashlib
@@ -19,8 +22,13 @@ from uuid import UUID
 
 import psycopg
 
-from app.config import DEFAULT_COUNTRY_CODE
-from app.db import document_pages, document_stages, documents, ocr_lines
+from app.config import DEFAULT_COUNTRY_CODE, get_settings
+from app.db import document_pages, document_stages, documents, extracted_fields, ocr_lines, quality_checks
+from app.errors import PipelineInputError
+from app.extraction import UnsupportedDocumentTypeError
+from app.extraction.classify import classify
+from app.extraction.rules import SourceLine, extract
+from app.extraction.validate import validate_field
 from app.ocr import NORMALISER_VERSION, OcrInputError
 from app.ocr.envelope import Envelope, parse_json, validate_envelope
 from app.ocr.registry import normalise_envelope
@@ -39,7 +47,7 @@ class StageFailed(Exception):
 
 
 def _error_code(exc: BaseException) -> str:
-    return exc.error_code if isinstance(exc, OcrInputError) else "internal_server_error"
+    return exc.error_code if isinstance(exc, PipelineInputError) else "internal_server_error"
 
 
 def _error_message(exc: BaseException) -> str:
@@ -53,7 +61,11 @@ def _execute_stage(
     stage: str,
     success_status: str,
     body: Callable[[], None],
+    on_failure: Callable[[Exception], None] | None = None,
+    fail_document: bool = True,
 ) -> None:
+    """`on_failure(exc)` runs inside the failure transaction (after the body's writes
+    were rolled back), for rows that must record the failure itself."""
     started_at = datetime.now(UTC)
     t0 = time.perf_counter()
     try:
@@ -72,8 +84,12 @@ def _execute_stage(
                 conn, document_id, stage, "failed", started_at, datetime.now(UTC), duration_ms,
                 run_id, error=message,
             )
-            documents.mark_failed(conn, document_id, code, message, run_id)
-        raise StageFailed(stage, code, message) from exc
+            if on_failure is not None:
+                on_failure(exc)
+            if fail_document:
+                documents.mark_failed(conn, document_id, code, message, run_id)
+        if fail_document:
+            raise StageFailed(stage, code, message) from exc
 
 
 # --- receive -----------------------------------------------------------------
@@ -93,6 +109,26 @@ def normalise_country_code(value: str | None) -> str | None:
     if not COUNTRY_CODE_RE.match(code):
         raise ValueError(f"country_code must be two letters, got {value!r}")
     return code
+
+
+RECEIVE_CHECKS = ("file_json", "envelope_valid", "engine_supported")
+
+
+def receive_checks(error: OcrInputError | None) -> list[dict]:
+    """The three receive-time checks in evaluation order. The failing one is
+    passed=false; checks after it were not evaluated and are also passed=false,
+    marked `evaluated: false`, so every document has the full set."""
+    failed_at = RECEIVE_CHECKS.index(error.check) if error else len(RECEIVE_CHECKS)
+    checks = []
+    for i, name in enumerate(RECEIVE_CHECKS):
+        if i < failed_at:
+            details = {"evaluated": True}
+        elif i == failed_at:
+            details = {"evaluated": True, "error_code": error.error_code, "message": str(error)[:500]}
+        else:
+            details = {"evaluated": False, "message": f"not evaluated: {RECEIVE_CHECKS[failed_at]} failed"}
+        checks.append({"check_name": name, "passed": i < failed_at, "severity": "error", "details": details})
+    return checks
 
 
 @dataclass(frozen=True)
@@ -193,6 +229,7 @@ def stage_receive(
         if document_id is None:  # lost a race with a concurrent upload of the same bytes
             existing = documents.get_by_content_hash(conn, hash_value)
             return ReceiveOutcome(existing["id"], duplicate=True, failed=existing["status"] == "failed")
+        quality_checks.replace(conn, document_id, run_id, list(RECEIVE_CHECKS), receive_checks(error))
         document_stages.record(
             conn, document_id, "receive", "failed" if error else "succeeded", started_at,
             datetime.now(UTC), round((time.perf_counter() - t0) * 1000), run_id,
@@ -253,8 +290,130 @@ def stage_load(conn: psycopg.Connection, document_id: UUID, run_id: UUID) -> Non
     _execute_stage(conn, document_id, run_id, "load", "loaded", body)
 
 
-# Stages after receive, in order. extract / quality / chunk / embed arrive in phases 3–4.
+# --- extract -----------------------------------------------------------------
+
+
+def _pages_from_db(conn: psycopg.Connection, document_id: UUID) -> list[list[SourceLine]]:
+    pages: dict[int, list[SourceLine]] = {}
+    for row in ocr_lines.list_for_document(conn, document_id):
+        pages.setdefault(row["page_number"], []).append(SourceLine(row["id"], row["text"]))
+    return [pages[n] for n in sorted(pages)]
+
+
+def stage_extract(conn: psycopg.Connection, document_id: UUID, run_id: UUID) -> None:
+    """Classify, extract every §6.1 field of the type, validate; replaces earlier
+    extracted_fields and document_type_supported rows. No type → document failed
+    with unsupported_document_type and document_type_supported = false."""
+
+    def body() -> None:
+        pages = _pages_from_db(conn, document_id)
+        classification = classify("\n".join(line.text for page in pages for line in page))
+        rows = []
+        for raw in extract(classification.document_type, pages):
+            result = validate_field(raw.field_name, raw.value_type, raw.raw_value)
+            rows.append({
+                "field_name": raw.field_name,
+                "raw_value": raw.raw_value,
+                "normalised_value": result.normalised_value,
+                "value_type": raw.value_type,
+                "validation_status": result.status,
+                "validation_message": result.message,
+                "source_line_ids": raw.source_line_ids,
+            })
+        extracted_fields.replace_for_document(conn, document_id, run_id, rows)
+        documents.set_document_type(conn, document_id, classification.document_type)
+        quality_checks.replace(conn, document_id, run_id, ["document_type_supported"], [{
+            "check_name": "document_type_supported",
+            "passed": True,
+            "severity": "error",
+            "details": {
+                "document_type": classification.document_type,
+                "score": classification.score,
+                "matched_keywords": list(classification.matched_keywords),
+            },
+        }])
+
+    def on_failure(exc: Exception) -> None:
+        if isinstance(exc, UnsupportedDocumentTypeError):
+            extracted_fields.delete_for_document(conn, document_id)
+            documents.set_document_type(conn, document_id, None)
+            quality_checks.replace(conn, document_id, run_id, ["document_type_supported"], [{
+                "check_name": "document_type_supported",
+                "passed": False,
+                "severity": "error",
+                "details": {"error_code": exc.error_code, "message": str(exc)},
+            }])
+
+    _execute_stage(conn, document_id, run_id, "extract", "extracted", body, on_failure)
+
+
+# --- quality -----------------------------------------------------------------
+
+QUALITY_OWNED_CHECKS = ["page_confidence", "bbox_clamped", r"field\_%"]
+
+
+def quality_checks_for(pages: list[dict], fields: list[dict], threshold: float) -> list[dict]:
+    """Pure: page_confidence per page + document level, bbox_clamped per page,
+    field_<name> per extracted field. `pages`: page_id, page_number,
+    mean_confidence, bbox_clamped_count. `fields`: extracted_fields rows."""
+    checks = []
+    flagged_pages = []
+    for page in pages:
+        conf = page["mean_confidence"]
+        passed = conf is not None and conf >= threshold
+        if not passed:
+            flagged_pages.append(page["page_number"])
+        checks.append({
+            "check_name": "page_confidence", "page_id": page["page_id"], "passed": passed,
+            "severity": "warning",
+            "details": {"threshold": threshold, "observed": conf, "page_number": page["page_number"],
+                        **({} if conf is not None else {"message": "no line confidence on page"})},
+        })
+        checks.append({
+            "check_name": "bbox_clamped", "page_id": page["page_id"],
+            "passed": page["bbox_clamped_count"] == 0, "severity": "warning",
+            "details": {"clamped_count": page["bbox_clamped_count"], "page_number": page["page_number"]},
+        })
+    checks.append({
+        "check_name": "page_confidence", "page_id": None, "passed": not flagged_pages,
+        "severity": "warning",
+        "details": {"threshold": threshold, "flagged_pages": flagged_pages, "level": "document"},
+    })
+    for f in fields:
+        checks.append({
+            "check_name": f"field_{f['field_name']}", "passed": f["validation_status"] == "valid",
+            "severity": "warning",
+            "details": {"validation_status": f["validation_status"], "message": f["validation_message"]},
+        })
+    return checks
+
+
+def stage_quality(conn: psycopg.Connection, document_id: UUID, run_id: UUID) -> None:
+    """Flags only: writes quality_checks, never fails the document."""
+
+    def body() -> None:
+        doc = documents.get(conn, document_id)
+        normalised = NormalisedDocument.model_validate_json(storage.read_bytes(doc["normalised_storage_uri"]))
+        clamped = {p.page_number: p.bbox_clamped_count for p in normalised.pages}
+        pages = [
+            {"page_id": p["id"], "page_number": p["page_number"],
+             "mean_confidence": None if p["mean_confidence"] is None else float(p["mean_confidence"]),
+             "bbox_clamped_count": clamped.get(p["page_number"], 0)}
+            for p in document_pages.list_for_document(conn, document_id)
+        ]
+        checks = quality_checks_for(
+            pages, extracted_fields.list_for_document(conn, document_id),
+            get_settings().quality_min_page_confidence,
+        )
+        quality_checks.replace(conn, document_id, run_id, QUALITY_OWNED_CHECKS, checks)
+
+    _execute_stage(conn, document_id, run_id, "quality", "extracted", body, fail_document=False)
+
+
+# Stages after receive, in order. chunk / embed arrive in phase 4.
 POST_RECEIVE_STAGES: tuple[Callable[[psycopg.Connection, UUID, UUID], None], ...] = (
     stage_normalise,
     stage_load,
+    stage_extract,
+    stage_quality,
 )

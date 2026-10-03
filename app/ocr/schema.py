@@ -22,17 +22,24 @@ class NormalisedLine(_Strict):
     confidence: Fraction | None
     confidence_source: Literal["engine_line", "mean_of_words"] | None
 
-    @field_validator("bbox", mode="before")
+    # True when any coordinate was clamped; feeds the `bbox_clamped` quality check.
+    bbox_clamped: bool = False
+
+    @model_validator(mode="before")
     @classmethod
-    def _clamp(cls, bbox):
+    def _clamp(cls, data):
         """Engines can report coordinates slightly off-page (skewed scans); clamp
-        each coordinate into [0, 1]. Non-numeric values are left for type validation."""
-        if isinstance(bbox, (list, tuple)):
-            return tuple(
+        each coordinate into [0, 1]. Non-numeric values are left for type validation.
+        `bbox_clamped` is only ever set, never reset, so it survives re-validation
+        of an already-normalised file."""
+        if isinstance(data, dict) and isinstance(data.get("bbox"), (list, tuple)):
+            bbox = tuple(data["bbox"])
+            clamped = tuple(
                 min(max(v, 0.0), 1.0) if isinstance(v, (int, float)) and not isinstance(v, bool) else v
                 for v in bbox
             )
-        return bbox
+            data = {**data, "bbox": clamped, "bbox_clamped": bool(data.get("bbox_clamped")) or clamped != bbox}
+        return data
 
     @field_validator("bbox")
     @classmethod
@@ -68,6 +75,10 @@ class NormalisedPage(_Strict):
     def mean_confidence(self) -> float | None:
         values = [line.confidence for line in self.lines if line.confidence is not None]
         return sum(values) / len(values) if values else None
+
+    @property
+    def bbox_clamped_count(self) -> int:
+        return sum(line.bbox_clamped for line in self.lines)
 
 
 class SourceInfo(_Strict):

@@ -2,6 +2,8 @@ from uuid import UUID
 
 import psycopg
 
+from app.db.connection import fetch_all
+
 
 def insert_many(conn: psycopg.Connection, document_id: UUID, page_id: UUID, run_id: UUID, lines) -> None:
     """`lines`: iterable of app.ocr.schema.NormalisedLine."""
@@ -19,3 +21,18 @@ def insert_many(conn: psycopg.Connection, document_id: UUID, page_id: UUID, run_
                 for line in lines
             ],
         )
+
+
+def list_for_document(conn: psycopg.Connection, document_id: UUID) -> list[dict]:
+    """All lines of a document in page, then reading, order."""
+    return fetch_all(
+        conn,
+        """
+        select l.id, p.page_number, l.line_index, l.text
+          from ocr_lines l
+          join document_pages p on p.id = l.page_id
+         where l.document_id = %s
+         order by p.page_number, l.line_index
+        """,
+        (document_id,),
+    )

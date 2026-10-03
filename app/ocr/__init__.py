@@ -8,17 +8,27 @@ import math
 
 from pydantic import ValidationError
 
+from app.errors import PipelineInputError
+
 NORMALISER_VERSION = "1.0.0"
 
 
-class OcrInputError(Exception):
-    error_code: str = "internal_server_error"
+class OcrInputError(PipelineInputError):
+    """`check` names the receive-time quality check that failed (CLAUDE.md §3.7)."""
+
+    check: str = "envelope_valid"
+
+    def __init__(self, message: str, check: str | None = None):
+        super().__init__(message)
+        if check is not None:
+            self.check = check
 
 
 class UnreadableFileError(OcrInputError):
     """The uploaded bytes are not a JSON document."""
 
     error_code = "unreadable_file"
+    check = "file_json"
 
 
 class UnsupportedFormatError(OcrInputError):

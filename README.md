@@ -4,9 +4,9 @@ OCR engine exports (AWS Textract, Tesseract, Azure Document Intelligence) →
 normalised OCR JSON → PostgreSQL → chunks + pgvector embeddings → search API.
 The design spec is `CLAUDE.md`.
 
-> Status: phase 2 (receive → normalise → load, API, CLI ingest). Extraction,
-> quality checks, chunking, embeddings and search arrive in later phases, so a
-> document currently finishes with `status = loaded`, `document_type = null`, `chunks = 0`.
+> Status: phase 3 (receive → normalise → load → extract → quality). Chunking,
+> embeddings and search arrive in phase 4, so a document currently finishes with
+> `status = extracted` and `chunks = 0`.
 
 ## Run with Docker
 
@@ -40,12 +40,69 @@ Errors use the body `{"error": "<code>"}`:
 | 400 | `file_missing` | no `file` part, or an empty file |
 | 422 | `unreadable_file` | not JSON (still stored in the raw zone, `documents` row with `status = failed`) |
 | 422 | `unsupported_ocr_format` | no envelope, unknown `ocr.engine`, or `raw_output` not in that engine's shape (stored + failed row) |
-| 422 | `unsupported_document_type` | classification found no supported type (phase 3) |
+| 422 | `unsupported_document_type` | no document-type keyword in the text (stored + failed row) |
 | 422 | `invalid_country_code` | `country_code` form field is not two letters |
 | 404 | `not_found` | `GET /documents/{id}` for an unknown or malformed id |
 | 500 | `internal_server_error` | unexpected failure; the document is marked failed |
 
 Re-uploading a file that was rejected returns the same error again (no new rows).
+
+## Extraction and quality
+
+- `app/extraction/classify.py` picks `document_type` from weighted keywords (highest total
+  weight wins; a tie goes to the earliest match). No keyword → `unsupported_document_type`.
+- `app/extraction/rules.py` holds one `field_name → (regex, value_type)` dict per type; its
+  keys are the CLAUDE.md §6.1 field list, and every field gets an `extracted_fields` row
+  (`valid` / `invalid` / `missing`) with the `ocr_lines` ids the match came from.
+  `provider_name` falls back to the first line of page 1, skipping lines that mention
+  Fullerton Health.
+- `app/extraction/validate.py` normalises values: dates → `DD/MM/YYYY`, `*_date_time` →
+  `DD/MM/YYYY HH:MM`, amounts → integer in the smallest currency unit (`S$93.20` → `9320`,
+  `S$45` → `4500`), `mc_days` → non-negative int.
+- `quality_checks` per document: `file_json`, `envelope_valid`, `engine_supported` (receive),
+  `document_type_supported` (extract), `page_confidence` per page plus one document-level
+  row (threshold `QUALITY_MIN_PAGE_CONFIDENCE`, default 0.80), `bbox_clamped` per page,
+  `field_<name>` per extracted field. Quality checks are warnings only and never fail the
+  document. `quality_flags` in the POST response lists the names of checks that did not pass.
+
+### Quarantine
+
+Failed documents, plus any document with a check that did not pass:
+
+```sql
+select document_id, upload_filename, status, error_code, document_type, country_code, failed_checks
+  from v_quarantine
+ order by ingested_at desc;
+```
+
+```bash
+docker compose exec db psql -U docs -d docs -c "select upload_filename, status, error_code, failed_checks from v_quarantine"
+```
+
+### How to add a new document type
+
+Example: `discharge_summary`.
+
+1. **`app/extraction/classify.py`**: add one entry to `KEYWORDS`, e.g.
+   `"discharge_summary": {"discharge summary": 3, "date of admission": 1}`.
+2. **`app/extraction/rules.py`**: add `FIELD_RULES["discharge_summary"] = {field_name: _rule(regex, value_type), ...}`.
+   The keys are the type's field list. Reuse `labelled(labels, VALUE)` with `TEXT`, `DATE`,
+   `DATETIME`, `AMOUNT`, `NUMBER`, and the shared `CLAIMANT_*` / `PROVIDER_NAME` rules.
+   A new value_type needs a parser in `PARSERS_BY_TYPE` in `app/extraction/validate.py`;
+   field-specific rules go in `PARSERS_BY_FIELD`.
+3. **`CLAUDE.md` §6.1**: add the type and its field list.
+4. **A new migration** `migrations/00N_document_type_<name>.sql`: `documents.document_type`
+   has a check constraint listing the allowed types:
+   ```sql
+   alter table documents drop constraint documents_document_type_check;
+   alter table documents add constraint documents_document_type_check
+       check (document_type in ('referral_letter', 'medical_certificate', 'receipt', 'discharge_summary'));
+   ```
+   If the type has claimant fields with new names, also add them to the exclusion list in
+   `v_documents_deidentified` (`create or replace view`).
+5. **Tests**: a sample export in `tests/`, plus a case in `tests/test_extraction.py`.
+
+No table changes are needed: `extracted_fields` is key-value.
 
 ## CLI
 

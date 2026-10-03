@@ -41,9 +41,10 @@ def test_idempotent_ingest(db_conn, client, sample_bytes_by_engine):
     assert a["document_id"] == b["document_id"]
     assert a["content_hash"] == b["content_hash"]
     assert a["content_hash"].startswith("sha256:")
-    assert a["status"] == b["status"] == "loaded"
+    assert a["status"] == b["status"] == "extracted"
     assert a["pages"] == b["pages"] == 1
-    assert a["document_type"] is None and a["chunks"] == 0 and a["quality_flags"] == []
+    assert a["document_type"] == b["document_type"] == "medical_certificate"
+    assert a["chunks"] == 0 and a["quality_flags"] == [] and b["quality_flags"] == []
     assert set(a["timings_ms"]) == {"normalise", "load", "embed"}
     assert a["timings_ms"]["normalise"] >= 0 and a["timings_ms"]["load"] >= 0
     assert a["timings_ms"]["embed"] is None
@@ -53,7 +54,8 @@ def test_idempotent_ingest(db_conn, client, sample_bytes_by_engine):
     assert count(db_conn, "select upload_filename = 'first_name.json' from documents where id = %s", doc_id)
     assert count(db_conn, "select count(*) from document_pages where document_id = %s", doc_id) == 1
     assert count(db_conn, "select count(*) from ocr_lines where document_id = %s", doc_id) == 31
-    assert count(db_conn, "select count(*) from document_stages where document_id = %s", doc_id) == 3
+    assert count(db_conn, "select count(*) from document_stages where document_id = %s", doc_id) == 5
+    assert count(db_conn, "select count(*) from extracted_fields where document_id = %s", doc_id) == 10
     # The duplicate created no pipeline run either.
     assert count(db_conn, "select count(distinct run_id) from document_stages where document_id = %s", doc_id) == 1
 
@@ -111,15 +113,25 @@ def test_get_document_returns_stages_with_durations(db_conn, client, sample_byte
     assert response.status_code == 200
     body = response.json()
     assert body["id"] == doc_id
-    assert body["status"] == "loaded"
+    assert body["status"] == "extracted"
+    assert body["document_type"] == "referral_letter"
     assert body["ocr_engine"] == "azure-document-intelligence"
     assert body["normalised_storage_uri"].endswith(".v1.0.0.json")
-    assert [s["stage"] for s in body["stages"]] == ["receive", "normalise", "load"]
+    assert [s["stage"] for s in body["stages"]] == ["receive", "normalise", "load", "extract", "quality"]
     for stage in body["stages"]:
         assert stage["status"] == "succeeded"
         assert isinstance(stage["duration_ms"], int) and stage["duration_ms"] >= 0
         assert stage["error"] is None
-    assert body["quality_checks"] == [] and body["extracted_fields"] == []
+    assert {f["field_name"] for f in body["extracted_fields"]} == {
+        "claimant_name", "provider_name", "signature_presence",
+        "total_amount_paid", "total_approved_amount", "total_requested_amount",
+    }
+    assert all(f["validation_status"] == "valid" for f in body["extracted_fields"])
+    assert all(c["passed"] for c in body["quality_checks"])
+    assert {c["check_name"] for c in body["quality_checks"]} >= {
+        "file_json", "envelope_valid", "engine_supported", "document_type_supported",
+        "page_confidence", "bbox_clamped", "field_total_amount_paid",
+    }
     [page] = body["pages"]
     assert page["page_number"] == 1 and page["line_count"] == 37
     assert page["size_unit"] == "inch"
@@ -151,7 +163,7 @@ def test_invalid_country_code_form_field(db_conn, client, sample_bytes_by_engine
 
 def test_load_reads_normalised_zone_not_raw(db_conn, sample_bytes_by_engine):
     result = run_pipeline(variant(sample_bytes_by_engine["tesseract"], "reload"), "reload.json", conn=db_conn)
-    assert result.status == "loaded"
+    assert result.status == "extracted"
     raw_uri, = db_conn.execute("select raw_storage_uri from documents where id = %s", (result.document_id,)).fetchone()
     storage.uri_to_path(raw_uri).unlink()
 

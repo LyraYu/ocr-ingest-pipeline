@@ -65,7 +65,11 @@ def validate_envelope(data: object) -> Envelope:
     except ValidationError as exc:
         raise UnsupportedFormatError(f"envelope is invalid: {describe_validation_error(exc)}") from exc
 
-    get_engine(envelope.ocr.engine).check_shape(envelope.raw_output)
+    # Unknown engine name, or raw_output not in the declared engine's shape.
+    try:
+        get_engine(envelope.ocr.engine).check_shape(envelope.raw_output)
+    except UnsupportedFormatError as exc:
+        raise UnsupportedFormatError(str(exc), check="engine_supported") from exc
     return envelope
 
 
