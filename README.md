@@ -21,7 +21,8 @@ database and the embedding model all run in containers.
 ```bash
 docker compose up -d
 docker compose run --rm api python -m app.cli ingest samples
-DOC_ID=$(curl -s -F file=@samples/receipt.json localhost:8000/documents | tee /dev/stderr | grep -o '"document_id":"[^"]*"' | cut -d'"' -f4)
+POST=$(curl -s -F file=@samples/receipt.json localhost:8000/documents); echo "$POST"
+DOC_ID=$(echo "$POST" | grep -o '"document_id":"[^"]*"' | cut -d'"' -f4)
 curl -s localhost:8000/documents/$DOC_ID
 curl -s localhost:8000/search -H 'content-type: application/json' -d '{"query": "medical leave for acute gastroenteritis", "top_k": 3, "filters": {"document_type": "medical_certificate"}}'
 ```
@@ -34,7 +35,7 @@ curl -s localhost:8000/search -H 'content-type: application/json' -d '{"query": 
    any pending migrations first. It prints one line per file, then
    `processed: 3  duplicate: 0  failed: 0`.
 3. The `POST /documents` line uploads a sample that is already ingested. The API returns 200
-   with `"duplicate": true`; `tee` prints that response, and its `document_id` is kept in
+   with `"duplicate": true`, which is printed. The next line keeps its `document_id` in
    `DOC_ID`.
 4. The last two lines fetch that document and run a search.
 
