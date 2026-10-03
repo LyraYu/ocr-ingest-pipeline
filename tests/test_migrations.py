@@ -25,3 +25,16 @@ def test_schema_applied_and_migrate_is_idempotent(db_conn):
         "select 1 from pg_indexes where indexname = 'chunk_embeddings_embedding_hnsw_idx'"
         " and indexdef ilike '%hnsw%vector_cosine_ops%'"
     ).fetchone()
+
+
+def test_tests_use_the_test_database(db_conn):
+    assert db_conn.execute("select current_database()").fetchone() == ("docs_test",)
+
+
+def test_runs_record_the_code_version(db_conn):
+    from app.config import get_settings
+    from app.pipeline.runner import start_run
+
+    run_id = start_run(db_conn, "ingest")
+    recorded = db_conn.execute("select code_version from pipeline_runs where id = %s", (run_id,)).fetchone()[0]
+    assert recorded == get_settings().code_version

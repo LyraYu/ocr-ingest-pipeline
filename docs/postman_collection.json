@@ -1,0 +1,58 @@
+{
+  "info": {
+    "name": "Document Ingestion & Embedding Pipeline",
+    "description": "POST /documents, GET /documents/{id}, POST /search. Set baseUrl (default http://localhost:8000). The POST /documents request stores the returned document_id for the GET request. For the upload, pick a file such as samples/receipt.json in the form-data `file` field.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8000" },
+    { "key": "document_id", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "POST /documents",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('201 new or 200 duplicate', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+              "if (pm.response.json().document_id) { pm.collectionVariables.set('document_id', pm.response.json().document_id); }"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/documents",
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            { "key": "file", "type": "file", "src": "samples/receipt.json" },
+            { "key": "country_code", "type": "text", "value": "SG" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "GET /documents/{id}",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/documents/{{document_id}}"
+      }
+    },
+    {
+      "name": "POST /search",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/search",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"medical leave for acute gastroenteritis\",\n  \"top_k\": 5,\n  \"filters\": { \"document_type\": \"medical_certificate\", \"country_code\": \"SG\" }\n}"
+        }
+      }
+    }
+  ]
+}

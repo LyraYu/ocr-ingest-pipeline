@@ -1,0 +1,55 @@
+{
+  "request": {
+    "query": "knee pain referral to orthopaedic specialist",
+    "top_k": 3
+  },
+  "response": {
+    "results": [
+      {
+        "chunk_id": "4a76e2dc-128b-4ad7-91c2-a211faf27b16",
+        "document_id": "12e51b35-5ba0-42c5-a475-5d850173860e",
+        "document_type": "referral_letter",
+        "page": 1,
+        "score": 0.6123091809565328,
+        "text": "Dear Doctor,\nKindly review the above patient for persistent right knee pain of\n3 months duration, not responding to NSAIDs and physiotherapy.\nProvisional diagnosis: Right knee medial meniscus tear (M23.2).\nMRI right knee and specialist consultation requested.\nPre-authorisation summary\nTotal Requested Amount:\nSGD 1,200.00\nTotal Approved Amount:\nSGD 1,000.00\nTotal Amount Paid:\nSGD 850.00",
+        "bbox": [
+          0.0806488683513373,
+          0.324399442415742,
+          0.641126447070778,
+          0.505699845210505
+        ],
+        "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
+      },
+      {
+        "chunk_id": "1c7ab1b3-388d-4ab9-96a9-f658c59c83b5",
+        "document_id": "12e51b35-5ba0-42c5-a475-5d850173860e",
+        "document_type": "referral_letter",
+        "page": 1,
+        "score": 0.3193964767815789,
+        "text": "HARBOURVIEW FAMILY CLINIC PTE LTD\n12 Example Marina Way #01-05 Singapore 018900 Tel: 6000 0000\nREFERRAL LETTER\nDate:\n08/09/2026\nTo:\nDr. Chua Kok Leong\nEastpoint Orthopaedic Specialists\n3 Example Hospital Drive #08-02 Singapore 169000\nRe: Patient\nMUHAMMAD RIZAL BIN OSMAN\nNRIC/FIN:\nS0000003C\nDOB:\n09/06/1979\nEmployer:\nExample Logistics Pte Ltd\nPolicy No:\nPOL-SG-000456\nDear Doctor,",
+        "bbox": [
+          0.0806488683513373,
+          0.0627111251742451,
+          0.744347805049173,
+          0.335807684742545
+        ],
+        "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
+      },
+      {
+        "chunk_id": "3084ebc9-4898-44e8-824c-9961e8e05f39",
+        "document_id": "12e51b35-5ba0-42c5-a475-5d850173860e",
+        "document_type": "referral_letter",
+        "page": 1,
+        "score": 0.2946043610572815,
+        "text": "SGD 850.00\nThank you for seeing this patient.\nYours sincerely,\nSignature: [signed]\nDr. Lim Hui Min MCR No: M00000Z\nReferring provider: Harbourview Family Clinic Pte Ltd\nPre-authorisation issued via Fullerton Health network, ref FH-SG-PA-000789",
+        "bbox": [
+          0.0806488683513373,
+          0.494300154789495,
+          0.612094306071346,
+          0.647661481361121
+        ],
+        "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
+      }
+    ]
+  }
+}

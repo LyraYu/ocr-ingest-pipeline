@@ -1,0 +1,431 @@
+{
+  "normaliser_version": "1.1.0",
+  "normalised_at": "2026-10-03T17:39:53.054635Z",
+  "coordinate_system": "fraction_of_page_0_1_origin_top_left",
+  "confidence_scale": "0_1",
+  "source": {
+    "original_filename": "medical_certificate.pdf",
+    "mime_type": "application/pdf",
+    "source_sha256": "778f6aa09ed3bab55a2a2cc4cd68077c2070fe523aa3403f2006035a047e402d",
+    "country_code": "SG"
+  },
+  "engine": {
+    "name": "aws-textract",
+    "version": "DetectDocumentText/1.0",
+    "processed_at": "2026-09-02T03:12:44Z"
+  },
+  "pages": [
+    {
+      "page_number": 1,
+      "width": null,
+      "height": null,
+      "size_unit": null,
+      "size_reason": "aws-textract reports only ratio coordinates, no absolute page size",
+      "lines": [
+        {
+          "line_index": 0,
+          "text": "HARBOURVIEW FAMILY CLINIC PTE LTD",
+          "bbox": [
+            0.080645,
+            0.062714,
+            0.5,
+            0.079818
+          ],
+          "confidence": 0.9718899999999999,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 1,
+          "text": "12 Example Marina Way #01-05 Singapore 018900",
+          "bbox": [
+            0.080645,
+            0.087799,
+            0.43871000000000004,
+            0.098631
+          ],
+          "confidence": 0.95806,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 2,
+          "text": "Tel: 6000 0000 Fax: 6000 0001",
+          "bbox": [
+            0.080645,
+            0.106613,
+            0.310484,
+            0.117445
+          ],
+          "confidence": 0.95659,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 3,
+          "text": "MEDICAL CERTIFICATE",
+          "bbox": [
+            0.33871,
+            0.139111,
+            0.612904,
+            0.158495
+          ],
+          "confidence": 0.94965,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 4,
+          "text": "Patient Name:",
+          "bbox": [
+            0.080645,
+            0.18016,
+            0.194355,
+            0.19156299999999998
+          ],
+          "confidence": 0.9917400000000001,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 5,
+          "text": "TAN WEI MING",
+          "bbox": [
+            0.266129,
+            0.18016,
+            0.369355,
+            0.19156299999999998
+          ],
+          "confidence": 0.94781,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 6,
+          "text": "NRIC/FIN:",
+          "bbox": [
+            0.080645,
+            0.199544,
+            0.160484,
+            0.210947
+          ],
+          "confidence": 0.9829300000000001,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 7,
+          "text": "S0000001A",
+          "bbox": [
+            0.266129,
+            0.199544,
+            0.345968,
+            0.210947
+          ],
+          "confidence": 0.94819,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 8,
+          "text": "Date of Birth:",
+          "bbox": [
+            0.080645,
+            0.218928,
+            0.201613,
+            0.230331
+          ],
+          "confidence": 0.9516899999999999,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 9,
+          "text": "14/03/1988",
+          "bbox": [
+            0.266129,
+            0.218928,
+            0.354839,
+            0.230331
+          ],
+          "confidence": 0.89756,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 10,
+          "text": "Address:",
+          "bbox": [
+            0.080645,
+            0.238312,
+            0.151613,
+            0.249715
+          ],
+          "confidence": 0.93989,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 11,
+          "text": "Blk 123 Sample Avenue 4 #05-67 Singapore 560123",
+          "bbox": [
+            0.266129,
+            0.238312,
+            0.671774,
+            0.249715
+          ],
+          "confidence": 0.94068,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 12,
+          "text": "Date/Time of Consultation:",
+          "bbox": [
+            0.080645,
+            0.27138,
+            0.308064,
+            0.282783
+          ],
+          "confidence": 0.9446899999999999,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 13,
+          "text": "02/09/2026 09:45",
+          "bbox": [
+            0.33871,
+            0.27138,
+            0.47903300000000004,
+            0.282783
+          ],
+          "confidence": 0.9423999999999999,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 14,
+          "text": "Diagnosis:",
+          "bbox": [
+            0.080645,
+            0.290764,
+            0.16935499999999998,
+            0.302167
+          ],
+          "confidence": 0.95844,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 15,
+          "text": "Acute gastroenteritis",
+          "bbox": [
+            0.266129,
+            0.290764,
+            0.45080600000000004,
+            0.302167
+          ],
+          "confidence": 0.9704900000000001,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 16,
+          "text": "ICD-10 Code:",
+          "bbox": [
+            0.080645,
+            0.310148,
+            0.18548399999999998,
+            0.321551
+          ],
+          "confidence": 0.9347799999999999,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 17,
+          "text": "A09",
+          "bbox": [
+            0.266129,
+            0.310148,
+            0.292742,
+            0.321551
+          ],
+          "confidence": 0.95122,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 18,
+          "text": "This is to certify that the above-named patient is unfit for duty",
+          "bbox": [
+            0.080645,
+            0.343216,
+            0.639516,
+            0.354619
+          ],
+          "confidence": 0.96044,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 19,
+          "text": "for a period of 2 day(s) from 02/09/2026 to 03/09/2026 inclusive.",
+          "bbox": [
+            0.080645,
+            0.3626,
+            0.641129,
+            0.374003
+          ],
+          "confidence": 0.93613,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 20,
+          "text": "Date of MC:",
+          "bbox": [
+            0.080645,
+            0.395667,
+            0.175,
+            0.40707
+          ],
+          "confidence": 0.96245,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 21,
+          "text": "02/09/2026",
+          "bbox": [
+            0.266129,
+            0.395667,
+            0.354839,
+            0.40707
+          ],
+          "confidence": 0.9178499999999999,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 22,
+          "text": "Discharge Date/Time:",
+          "bbox": [
+            0.080645,
+            0.415051,
+            0.256451,
+            0.426454
+          ],
+          "confidence": 0.9312600000000001,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 23,
+          "text": "02/09/2026 10:20",
+          "bbox": [
+            0.33871,
+            0.415051,
+            0.47903300000000004,
+            0.426454
+          ],
+          "confidence": 0.9563299999999999,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 24,
+          "text": "Submission Date/Time:",
+          "bbox": [
+            0.080645,
+            0.434436,
+            0.265322,
+            0.445839
+          ],
+          "confidence": 0.91999,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 25,
+          "text": "02/09/2026 11:05",
+          "bbox": [
+            0.33871,
+            0.434436,
+            0.47903300000000004,
+            0.445839
+          ],
+          "confidence": 0.93557,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 26,
+          "text": "Dr. Lim Hui Min",
+          "bbox": [
+            0.080645,
+            0.481186,
+            0.208871,
+            0.492589
+          ],
+          "confidence": 0.95446,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 27,
+          "text": "MBBS (Synthetic University) MCR No: M00000Z",
+          "bbox": [
+            0.080645,
+            0.50057,
+            0.42338699999999996,
+            0.5114019999999999
+          ],
+          "confidence": 0.94574,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 28,
+          "text": "Signature: [signed]",
+          "bbox": [
+            0.080645,
+            0.519384,
+            0.24758,
+            0.530787
+          ],
+          "confidence": 0.93186,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 29,
+          "text": "This certificate is not valid for absence from court attendance.",
+          "bbox": [
+            0.080645,
+            0.552452,
+            0.537903,
+            0.5621440000000001
+          ],
+          "confidence": 0.94796,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 30,
+          "text": "Panel clinic of Fullerton Health network - claims ref FH-SG-0000123",
+          "bbox": [
+            0.080645,
+            0.570125,
+            0.559677,
+            0.579817
+          ],
+          "confidence": 0.94902,
+          "confidence_source": "engine_line",
+          "bbox_clamped": false
+        }
+      ]
+    }
+  ]
+}

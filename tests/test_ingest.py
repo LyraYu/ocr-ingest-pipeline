@@ -258,3 +258,46 @@ def test_blank_envelope_country_code_falls_back_to_default(db_conn, client, samp
     assert response.status_code == 201
     row = db_conn.execute("select country_code from documents where id = %s", (response.json()["document_id"],))
     assert row.fetchone()[0] == "SG"
+
+
+def test_valid_form_country_overrides_invalid_envelope_country(db_conn, client, sample_bytes_by_engine):
+    """Precedence: a valid form field wins; the upstream problem is kept visible as a
+    warning check (and the document shows up in v_quarantine)."""
+    data = json.loads(sample_bytes_by_engine["tesseract"])
+    data["source"]["country_code"] = "Singapore"
+    data["test_variant"] = "form-overrides-envelope-country"
+
+    response = upload(client, json.dumps(data).encode(), "override.json", country_code="my")
+
+    assert response.status_code == 201, response.text
+    body = response.json()
+    assert body["status"] == "embedded"
+    assert body["quality_flags"] == ["envelope_country_code_invalid"]
+    doc_id = body["document_id"]
+    assert db_conn.execute("select country_code from documents where id = %s", (doc_id,)).fetchone() == ("MY",)
+    check = db_conn.execute(
+        "select passed, severity, details from quality_checks"
+        " where document_id = %s and check_name = 'envelope_country_code_invalid'",
+        (doc_id,),
+    ).fetchone()
+    assert check[:2] == (False, "warning") and check[2]["used_country_code"] == "MY"
+    receive = dict(db_conn.execute(
+        "select check_name, passed from quality_checks where document_id = %s"
+        " and check_name in ('file_json', 'envelope_valid', 'engine_supported')",
+        (doc_id,),
+    ).fetchall())
+    assert receive == {"file_json": True, "envelope_valid": True, "engine_supported": True}
+    assert db_conn.execute(
+        "select failed_checks from v_quarantine where document_id = %s", (doc_id,)
+    ).fetchone() == (["envelope_country_code_invalid"],)
+
+
+def test_valid_envelope_country_writes_no_country_check(db_conn, client, sample_bytes_by_engine):
+    data = json.loads(sample_bytes_by_engine["tesseract"])
+    data["test_variant"] = "valid-envelope-country"
+    response = upload(client, json.dumps(data).encode(), "valid-country.json", country_code="SG")
+    assert response.status_code == 201
+    assert db_conn.execute(
+        "select count(*) from quality_checks where document_id = %s and check_name = 'envelope_country_code_invalid'",
+        (response.json()["document_id"],),
+    ).fetchone() == (0,)

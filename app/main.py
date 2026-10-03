@@ -8,7 +8,9 @@ from fastapi.responses import JSONResponse
 
 from app.api import documents, search
 from app.api.errors import error_response
+from app.security import pii
 
+pii.install()  # PII masking on every log handler (CLAUDE.md §8)
 log = logging.getLogger(__name__)
 
 app = FastAPI(title="Document Ingestion & Embedding Pipeline")

@@ -1,0 +1,63 @@
+flowchart TB
+    %% Document ingestion pipeline: stages (CLAUDE.md §5) and storage layers.
+
+    subgraph entry["Entry points"]
+        api_post["POST /documents<br/>(one file, one pipeline run)"]
+        cli_ingest["CLI ingest &lt;folder&gt;<br/>(one run for the batch)"]
+        cli_reembed["CLI reembed --model X"]
+        api_search["POST /search"]
+        api_get["GET /documents/{id}"]
+    end
+
+    subgraph stages["Pipeline stages (app/pipeline/stages.py)"]
+        receive["receive<br/>sha256, duplicate check,<br/>JSON / envelope / engine checks"]
+        normalise["normalise<br/>engine raw_output → normalised OCR JSON<br/>(app/ocr/*, NORMALISER_VERSION)"]
+        load["load<br/>pages + lines"]
+        extract["extract<br/>classify, fields, validation"]
+        quality["quality<br/>page confidence, clamped boxes,<br/>field checks (flags only)"]
+        chunk["chunk<br/>whole lines ≤ 400 chars,<br/>1-line overlap, per page"]
+        embed["embed<br/>sentence-transformers,<br/>normalised 384-d vectors"]
+    end
+
+    subgraph disk["Local disk ./data (docker volume)"]
+        raw[("raw zone<br/>data/raw/&lt;sha256&gt;.json")]
+        norm[("OCR zone<br/>data/normalised/&lt;sha256&gt;.v&lt;version&gt;.json")]
+    end
+
+    subgraph pg["PostgreSQL 16 + pgvector"]
+        t_docs[("documents, document_stages,<br/>pipeline_runs")]
+        t_ocr[("document_pages, ocr_lines")]
+        t_fields[("extracted_fields")]
+        t_quality[("quality_checks<br/>→ v_quarantine")]
+        t_chunks[("chunks")]
+        t_emb[("chunk_embeddings (HNSW, cosine)<br/>embedding_models (one active)")]
+    end
+
+    hf[("Hugging Face cache<br/>(hf-cache volume)")]
+
+    api_post --> receive
+    cli_ingest --> receive
+    receive -- "every non-empty upload" --> raw
+    receive -- "row, receive checks;<br/>failed: unreadable_file /<br/>unsupported_ocr_format /<br/>invalid_country_code" --> t_docs
+    receive --> normalise
+    raw --> normalise
+    normalise --> norm
+    normalise --> load
+    norm -- "load reads only this file" --> load
+    load --> t_ocr
+    load --> extract
+    t_ocr --> extract
+    extract -- "failed: unsupported_document_type" --> t_quality
+    extract --> t_fields
+    extract --> quality
+    quality --> t_quality
+    quality --> chunk
+    t_ocr --> chunk
+    chunk --> t_chunks
+    chunk --> embed
+    hf --> embed
+    embed --> t_emb
+
+    cli_reembed -- "chunk (reuse) + embed with model X,<br/>then flip active model" --> chunk
+    api_search -- "embed query with active model,<br/>nearest chunks" --> t_emb
+    api_get --> t_docs

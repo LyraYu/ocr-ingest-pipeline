@@ -1,0 +1,15 @@
+{
+  "document_id": "8ee20b17-5b40-4cce-8629-d2ba0839982d",
+  "content_hash": "sha256:00fce3375b92d0d0f581ed923d5288bd0d9b697cfe677b034f9ae08d4bb6272e",
+  "duplicate": false,
+  "document_type": "receipt",
+  "status": "embedded",
+  "pages": 1,
+  "chunks": 2,
+  "quality_flags": [],
+  "timings_ms": {
+    "normalise": 2,
+    "load": 3,
+    "embed": 24
+  }
+}

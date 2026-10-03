@@ -1,0 +1,43 @@
+{
+  "request": {
+    "query": "GST amount on consultation receipt",
+    "top_k": 3,
+    "filters": {
+      "document_type": "receipt"
+    }
+  },
+  "response": {
+    "results": [
+      {
+        "chunk_id": "a443032d-d4b5-4fd8-8589-8a10308f8989",
+        "document_id": "8ee20b17-5b40-4cce-8629-d2ba0839982d",
+        "document_type": "receipt",
+        "page": 1,
+        "score": 0.46218372994113954,
+        "text": "NOVENA WELLNESS MEDICAL CENTRE\n88 Example Novena Road #03-12 Singapore 307000\nGST Reg No: M9-0000000-1 Tel: 6000 0002\nTAX INVOICE / OFFICIAL RECEIPT\nReceipt No:\nR-2026-004512\nDate:\n05/09/2026\nPatient:\nSITI NURHALIZA BINTE AHMAD\nNRIC/FIN:\nS0000002B\nDOB:\n22/11/1992\nAddress:\n45 Example Road #10-11 Singapore 308000\nDescription\nQty\nAmount\nConsultation - General Practitioner\n1\nS$45.00",
+        "bbox": [
+          0.0806451612903226,
+          0.0627137970353478,
+          0.828225806451613,
+          0.31927023945268
+        ],
+        "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
+      },
+      {
+        "chunk_id": "66b13cbe-1819-4a01-8887-bf63f51e3c7b",
+        "document_id": "8ee20b17-5b40-4cce-8629-d2ba0839982d",
+        "document_type": "receipt",
+        "page": 1,
+        "score": 0.4323662600080658,
+        "text": "S$45.00\nParacetamol 500mg tablets\n20\nS$8.50\nFull Blood Count (lab)\n1\nS$32.00\nSubtotal\nS$85.50\nGST 9%\nS$7.70\nTOTAL\nS$93.20\nPayment Mode: NETS\nAmount Tendered: S$93.20\nCorporate panel billing administered by Fullerton Health\nThank you. This is a computer generated receipt.",
+        "bbox": [
+          0.0806451612903226,
+          0.307867730900798,
+          0.839516129032258,
+          0.514253135689852
+        ],
+        "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
+      }
+    ]
+  }
+}

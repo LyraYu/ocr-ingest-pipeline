@@ -22,5 +22,11 @@ print(resolve_model('sentence-transformers/all-MiniLM-L6-v2'))"
 
 COPY . .
 
+# Code version recorded on every pipeline_runs row: the CODE_VERSION build arg when
+# given, else the short sha read from .git/HEAD, else "unknown" (see app/version.py).
+ARG CODE_VERSION=
+ENV CODE_VERSION=${CODE_VERSION}
+RUN python -m app.version "${CODE_VERSION}" > CODE_VERSION && echo "code version: $(cat CODE_VERSION)"
+
 EXPOSE 8000
 CMD ["sh", "-c", "python -m app.cli migrate && uvicorn app.main:app --host 0.0.0.0 --port 8000"]

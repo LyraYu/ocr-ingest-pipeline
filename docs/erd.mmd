@@ -1,0 +1,165 @@
+erDiagram
+    %% All tables from migrations/001_initial.sql (+ 002). Every derived row carries
+    %% run_id → pipeline_runs.id (lineage). ids are uuid; timestamps timestamptz.
+
+    pipeline_runs {
+        uuid id PK
+        text run_type "ingest | reembed | renormalise"
+        timestamptz started_at
+        timestamptz finished_at
+        text status "running | succeeded | failed | partial"
+        text code_version "git short sha"
+        text normaliser_version
+        text embedding_model
+        text embedding_model_version
+        jsonb stats "processed / duplicate / failed"
+    }
+
+    documents {
+        uuid id PK
+        text content_hash UK "sha256 of uploaded bytes (idempotency key)"
+        text source_sha256 "indexed, not unique"
+        text upload_filename
+        text source_filename
+        text source_mime_type
+        int size_bytes
+        text raw_storage_uri
+        text normalised_storage_uri
+        text document_type "referral_letter | medical_certificate | receipt"
+        char country_code
+        text ocr_engine
+        text ocr_engine_version
+        timestamptz ocr_processed_at
+        text status "received .. embedded | failed"
+        text error_code
+        text error_message
+        timestamptz ingested_at
+        timestamptz updated_at
+        uuid latest_run_id FK
+    }
+
+    document_stages {
+        uuid id PK
+        uuid document_id FK
+        text stage "receive .. embed"
+        text status "succeeded | failed | skipped"
+        timestamptz started_at
+        timestamptz finished_at
+        int duration_ms
+        text error
+        uuid run_id FK
+    }
+
+    document_pages {
+        uuid id PK
+        uuid document_id FK
+        int page_number "unique per document"
+        numeric width
+        numeric height
+        text size_unit "px | inch | null"
+        text size_reason
+        text ocr_engine
+        text ocr_engine_version
+        numeric mean_confidence
+        int line_count
+        uuid run_id FK
+    }
+
+    ocr_lines {
+        uuid id PK
+        uuid document_id FK
+        uuid page_id FK
+        int line_index "unique per page"
+        text text
+        numeric bbox_x0
+        numeric bbox_y0
+        numeric bbox_x1
+        numeric bbox_y1
+        numeric confidence
+        text confidence_source
+        uuid run_id FK
+    }
+
+    extracted_fields {
+        uuid id PK
+        uuid document_id FK
+        text field_name "unique per document"
+        text raw_value
+        jsonb normalised_value
+        text value_type
+        text validation_status "valid | invalid | missing"
+        text validation_message
+        uuid_array source_line_ids "ocr_lines ids"
+        uuid run_id FK
+    }
+
+    quality_checks {
+        uuid id PK
+        uuid document_id FK
+        uuid page_id FK "null for document-level"
+        text check_name
+        boolean passed
+        text severity "error | warning | info"
+        jsonb details
+        uuid run_id FK
+    }
+
+    chunks {
+        uuid id PK
+        uuid document_id FK
+        uuid page_id FK
+        int chunk_index "unique per document + chunking_version"
+        text chunking_version
+        text text
+        numeric bbox_x0
+        numeric bbox_y0
+        numeric bbox_x1
+        numeric bbox_y1
+        uuid_array source_line_ids "ocr_lines ids, ordered"
+        int char_count
+        uuid run_id FK
+    }
+
+    chunk_embeddings {
+        uuid id PK
+        uuid chunk_id FK
+        text model_name "unique with chunk_id + model_version"
+        text model_version
+        int dimension
+        vector_384 embedding "HNSW index, cosine"
+        timestamptz created_at
+        uuid run_id FK
+    }
+
+    embedding_models {
+        text model_name PK
+        text model_version
+        int dimension
+        boolean is_active "exactly one true"
+        timestamptz created_at
+    }
+
+    schema_migrations {
+        text filename PK
+        timestamptz applied_at
+    }
+
+    documents ||--o{ document_stages : "has"
+    documents ||--o{ document_pages : "has"
+    documents ||--o{ ocr_lines : "has"
+    document_pages ||--o{ ocr_lines : "contains"
+    documents ||--o{ extracted_fields : "has"
+    documents ||--o{ quality_checks : "has"
+    document_pages |o--o{ quality_checks : "page-level"
+    documents ||--o{ chunks : "has"
+    document_pages ||--o{ chunks : "contains"
+    chunks ||--o{ chunk_embeddings : "embedded as"
+    embedding_models ||..o{ chunk_embeddings : "by model_name (no FK)"
+    pipeline_runs |o--o{ documents : "latest_run_id"
+    pipeline_runs ||--o{ document_stages : "run_id"
+    pipeline_runs ||--o{ document_pages : "run_id"
+    pipeline_runs ||--o{ ocr_lines : "run_id"
+    pipeline_runs ||--o{ extracted_fields : "run_id"
+    pipeline_runs ||--o{ quality_checks : "run_id"
+    pipeline_runs ||--o{ chunks : "run_id"
+    pipeline_runs ||--o{ chunk_embeddings : "run_id"

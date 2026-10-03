@@ -1,0 +1,15 @@
+{
+  "document_id": "12e51b35-5ba0-42c5-a475-5d850173860e",
+  "content_hash": "sha256:df2bd2309c83431dab21011f794ccc2645470f0161f14dc810c0c8be26ce29bb",
+  "duplicate": false,
+  "document_type": "referral_letter",
+  "status": "embedded",
+  "pages": 1,
+  "chunks": 3,
+  "quality_flags": [],
+  "timings_ms": {
+    "normalise": 2,
+    "load": 4,
+    "embed": 24
+  }
+}

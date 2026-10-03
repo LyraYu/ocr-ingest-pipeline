@@ -8,9 +8,10 @@ UnsupportedFormatError (`unsupported_ocr_format`).
 import json
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, ValidationError
+from pydantic import BaseModel, ConfigDict, PrivateAttr, ValidationError
 
 from app.ocr import (
+    InvalidCountryCodeError,
     UnreadableFileError,
     UnsupportedFormatError,
     describe_validation_error,
@@ -37,6 +38,14 @@ class Envelope(BaseModel):
     ocr: OcrInfo
     raw_output: dict
 
+    # Set when source.country_code was present but malformed (it is then None in
+    # `source`). Private: cannot be set from the uploaded JSON.
+    _source_country_code_invalid: bool = PrivateAttr(default=False)
+
+    @property
+    def source_country_code_invalid(self) -> bool:
+        return self._source_country_code_invalid
+
 
 def parse_json(file_bytes: bytes) -> object:
     try:
@@ -45,12 +54,16 @@ def parse_json(file_bytes: bytes) -> object:
         raise UnreadableFileError(f"file is not valid JSON: {exc}") from exc
 
 
-def _normalise_source(source: object) -> object:
-    """country_code → upper-case two letters or None (blank). A malformed code raises
-    InvalidCountryCodeError, the same error as an invalid upload form field."""
+def _normalise_source(source: object) -> tuple[object, bool]:
+    """country_code → upper-case two letters or None (blank). A malformed code becomes
+    None and is reported (second value) instead of failing the envelope: whether it
+    rejects the upload depends on the form field (stages.stage_receive)."""
     if isinstance(source, dict) and "country_code" in source:
-        return {**source, "country_code": normalise_country_code(source["country_code"])}
-    return source
+        try:
+            return {**source, "country_code": normalise_country_code(source["country_code"])}, False
+        except InvalidCountryCodeError:
+            return {**source, "country_code": None}, True
+    return source, False
 
 
 def validate_envelope(data: object) -> Envelope:
@@ -63,7 +76,7 @@ def validate_envelope(data: object) -> Envelope:
         raise UnsupportedFormatError(f"envelope is missing {missing}")
 
     # Source fields are lenient: unknown keys in `source` are dropped, not rejected.
-    source = _normalise_source(data["source"])
+    source, country_invalid = _normalise_source(data["source"])
     if isinstance(source, dict):
         source = {k: v for k, v in source.items() if k in SourceInfo.model_fields}
     try:
@@ -76,6 +89,7 @@ def validate_envelope(data: object) -> Envelope:
         get_engine(envelope.ocr.engine).check_shape(envelope.raw_output)
     except UnsupportedFormatError as exc:
         raise UnsupportedFormatError(str(exc), check="engine_supported") from exc
+    envelope._source_country_code_invalid = country_invalid
     return envelope
 
 

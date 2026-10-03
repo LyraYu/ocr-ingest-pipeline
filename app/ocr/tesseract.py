@@ -41,7 +41,7 @@ def _conf(value) -> float | None:
         try:
             value = float(value)
         except ValueError:
-            raise UnsupportedFormatError(f"tesseract conf is not numeric: {value!r}") from None
+            raise UnsupportedFormatError("tesseract conf is not numeric") from None
     conf = as_number(value, "tesseract conf")
     return None if conf < 0 else conf / 100
 

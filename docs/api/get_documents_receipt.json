@@ -1,0 +1,325 @@
+{
+  "id": "8ee20b17-5b40-4cce-8629-d2ba0839982d",
+  "content_hash": "sha256:00fce3375b92d0d0f581ed923d5288bd0d9b697cfe677b034f9ae08d4bb6272e",
+  "source_sha256": "762efb79779bc29c9e7f7f333dee0276f0a02d7608610d437879005206d738c3",
+  "upload_filename": "receipt.json",
+  "source_filename": "receipt.pdf",
+  "source_mime_type": "application/pdf",
+  "size_bytes": 25717,
+  "raw_storage_uri": "file://data/raw/00fce3375b92d0d0f581ed923d5288bd0d9b697cfe677b034f9ae08d4bb6272e.json",
+  "normalised_storage_uri": "file://data/normalised/00fce3375b92d0d0f581ed923d5288bd0d9b697cfe677b034f9ae08d4bb6272e.v1.1.0.json",
+  "document_type": "receipt",
+  "country_code": "SG",
+  "ocr_engine": "tesseract",
+  "ocr_engine_version": "5.3.4",
+  "ocr_processed_at": "2026-09-05T06:40:02+00:00",
+  "status": "embedded",
+  "error_code": null,
+  "error_message": null,
+  "ingested_at": "2026-10-03T17:39:55.324115+00:00",
+  "updated_at": "2026-10-03T17:39:55.350623+00:00",
+  "latest_run_id": "68760fe7-73ad-4045-8f88-918c3c4fa178",
+  "stages": [
+    {
+      "stage": "receive",
+      "status": "succeeded",
+      "started_at": "2026-10-03T17:39:55.323229+00:00",
+      "finished_at": "2026-10-03T17:39:55.325428+00:00",
+      "duration_ms": 2,
+      "error": null,
+      "run_id": "68760fe7-73ad-4045-8f88-918c3c4fa178"
+    },
+    {
+      "stage": "normalise",
+      "status": "succeeded",
+      "started_at": "2026-10-03T17:39:55.327678+00:00",
+      "finished_at": "2026-10-03T17:39:55.329396+00:00",
+      "duration_ms": 2,
+      "error": null,
+      "run_id": "68760fe7-73ad-4045-8f88-918c3c4fa178"
+    },
+    {
+      "stage": "load",
+      "status": "succeeded",
+      "started_at": "2026-10-03T17:39:55.331781+00:00",
+      "finished_at": "2026-10-03T17:39:55.335237+00:00",
+      "duration_ms": 3,
+      "error": null,
+      "run_id": "68760fe7-73ad-4045-8f88-918c3c4fa178"
+    },
+    {
+      "stage": "extract",
+      "status": "succeeded",
+      "started_at": "2026-10-03T17:39:55.337618+00:00",
+      "finished_at": "2026-10-03T17:39:55.340152+00:00",
+      "duration_ms": 3,
+      "error": null,
+      "run_id": "68760fe7-73ad-4045-8f88-918c3c4fa178"
+    },
+    {
+      "stage": "quality",
+      "status": "succeeded",
+      "started_at": "2026-10-03T17:39:55.342576+00:00",
+      "finished_at": "2026-10-03T17:39:55.344299+00:00",
+      "duration_ms": 2,
+      "error": null,
+      "run_id": "68760fe7-73ad-4045-8f88-918c3c4fa178"
+    },
+    {
+      "stage": "chunk",
+      "status": "succeeded",
+      "started_at": "2026-10-03T17:39:55.346613+00:00",
+      "finished_at": "2026-10-03T17:39:55.348128+00:00",
+      "duration_ms": 2,
+      "error": null,
+      "run_id": "68760fe7-73ad-4045-8f88-918c3c4fa178"
+    },
+    {
+      "stage": "embed",
+      "status": "succeeded",
+      "started_at": "2026-10-03T17:39:55.350568+00:00",
+      "finished_at": "2026-10-03T17:39:55.374340+00:00",
+      "duration_ms": 24,
+      "error": null,
+      "run_id": "68760fe7-73ad-4045-8f88-918c3c4fa178"
+    }
+  ],
+  "quality_checks": [
+    {
+      "check_name": "bbox_clamped",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "page_number": 1,
+        "clamped_count": 0
+      },
+      "page_number": 1,
+      "run_id": "68760fe7-73ad-4045-8f88-918c3c4fa178"
+    },
+    {
+      "check_name": "document_type_supported",
+      "passed": true,
+      "severity": "error",
+      "details": {
+        "score": 9,
+        "document_type": "receipt",
+        "matched_keywords": [
+          "gst",
+          "official receipt",
+          "receipt",
+          "tax invoice"
+        ]
+      },
+      "page_number": null,
+      "run_id": "68760fe7-73ad-4045-8f88-918c3c4fa178"
+    },
+    {
+      "check_name": "engine_supported",
+      "passed": true,
+      "severity": "error",
+      "details": {},
+      "page_number": null,
+      "run_id": "68760fe7-73ad-4045-8f88-918c3c4fa178"
+    },
+    {
+      "check_name": "envelope_valid",
+      "passed": true,
+      "severity": "error",
+      "details": {},
+      "page_number": null,
+      "run_id": "68760fe7-73ad-4045-8f88-918c3c4fa178"
+    },
+    {
+      "check_name": "field_claimant_address",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "message": null,
+        "validation_status": "valid"
+      },
+      "page_number": null,
+      "run_id": "68760fe7-73ad-4045-8f88-918c3c4fa178"
+    },
+    {
+      "check_name": "field_claimant_date_of_birth",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "message": null,
+        "validation_status": "valid"
+      },
+      "page_number": null,
+      "run_id": "68760fe7-73ad-4045-8f88-918c3c4fa178"
+    },
+    {
+      "check_name": "field_claimant_name",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "message": null,
+        "validation_status": "valid"
+      },
+      "page_number": null,
+      "run_id": "68760fe7-73ad-4045-8f88-918c3c4fa178"
+    },
+    {
+      "check_name": "field_provider_name",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "message": null,
+        "validation_status": "valid"
+      },
+      "page_number": null,
+      "run_id": "68760fe7-73ad-4045-8f88-918c3c4fa178"
+    },
+    {
+      "check_name": "field_tax_amount",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "message": null,
+        "validation_status": "valid"
+      },
+      "page_number": null,
+      "run_id": "68760fe7-73ad-4045-8f88-918c3c4fa178"
+    },
+    {
+      "check_name": "field_total_amount",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "message": null,
+        "validation_status": "valid"
+      },
+      "page_number": null,
+      "run_id": "68760fe7-73ad-4045-8f88-918c3c4fa178"
+    },
+    {
+      "check_name": "file_json",
+      "passed": true,
+      "severity": "error",
+      "details": {},
+      "page_number": null,
+      "run_id": "68760fe7-73ad-4045-8f88-918c3c4fa178"
+    },
+    {
+      "check_name": "page_confidence",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "level": "document",
+        "threshold": 0.8,
+        "flagged_pages": []
+      },
+      "page_number": null,
+      "run_id": "68760fe7-73ad-4045-8f88-918c3c4fa178"
+    },
+    {
+      "check_name": "page_confidence",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "observed": 0.949670867794486,
+        "threshold": 0.8,
+        "page_number": 1
+      },
+      "page_number": 1,
+      "run_id": "68760fe7-73ad-4045-8f88-918c3c4fa178"
+    }
+  ],
+  "extracted_fields": [
+    {
+      "field_name": "claimant_address",
+      "raw_value": "45 Example Road #10-11 Singapore 308000",
+      "normalised_value": "45 Example Road #10-11 Singapore 308000",
+      "value_type": "text",
+      "validation_status": "valid",
+      "validation_message": null,
+      "source_line_ids": [
+        "43bbcfa1-e2b9-4c41-ab84-ab54ea11ae1e",
+        "69cc6a4d-5c64-4020-8996-6152f53214f7"
+      ],
+      "run_id": "68760fe7-73ad-4045-8f88-918c3c4fa178"
+    },
+    {
+      "field_name": "claimant_date_of_birth",
+      "raw_value": "22/11/1992",
+      "normalised_value": "22/11/1992",
+      "value_type": "date",
+      "validation_status": "valid",
+      "validation_message": null,
+      "source_line_ids": [
+        "4203db02-443d-47a5-8a43-c281a9157840",
+        "253b5ab7-137c-4895-92c0-a53853a17b6b"
+      ],
+      "run_id": "68760fe7-73ad-4045-8f88-918c3c4fa178"
+    },
+    {
+      "field_name": "claimant_name",
+      "raw_value": "SITI NURHALIZA BINTE AHMAD",
+      "normalised_value": "SITI NURHALIZA BINTE AHMAD",
+      "value_type": "text",
+      "validation_status": "valid",
+      "validation_message": null,
+      "source_line_ids": [
+        "6c49d874-1f3a-4827-910d-7ca71f382fdf",
+        "93581e0a-3149-4e49-bc1c-eddec93326f0"
+      ],
+      "run_id": "68760fe7-73ad-4045-8f88-918c3c4fa178"
+    },
+    {
+      "field_name": "provider_name",
+      "raw_value": "NOVENA WELLNESS MEDICAL CENTRE",
+      "normalised_value": "NOVENA WELLNESS MEDICAL CENTRE",
+      "value_type": "text",
+      "validation_status": "valid",
+      "validation_message": null,
+      "source_line_ids": [
+        "75201438-3f33-4ba3-a91a-3aa7fa5df50c"
+      ],
+      "run_id": "68760fe7-73ad-4045-8f88-918c3c4fa178"
+    },
+    {
+      "field_name": "tax_amount",
+      "raw_value": "S$7.70",
+      "normalised_value": 770,
+      "value_type": "amount",
+      "validation_status": "valid",
+      "validation_message": null,
+      "source_line_ids": [
+        "1bd3c388-9d52-4f2b-b7fe-59fc0520a3fd",
+        "bca940c2-f2c8-45a0-9bf0-ae5629e3ad13"
+      ],
+      "run_id": "68760fe7-73ad-4045-8f88-918c3c4fa178"
+    },
+    {
+      "field_name": "total_amount",
+      "raw_value": "S$93.20",
+      "normalised_value": 9320,
+      "value_type": "amount",
+      "validation_status": "valid",
+      "validation_message": null,
+      "source_line_ids": [
+        "f3369162-5141-45dd-8d7e-0de9267b9128",
+        "3e8eee8d-e0cb-425b-a277-455239e8151c"
+      ],
+      "run_id": "68760fe7-73ad-4045-8f88-918c3c4fa178"
+    }
+  ],
+  "pages": [
+    {
+      "id": "7baf9337-d571-468f-9fcb-ebd56e80400e",
+      "page_number": 1,
+      "width": 1240,
+      "height": 1754,
+      "size_unit": "px",
+      "size_reason": null,
+      "ocr_engine": "tesseract",
+      "ocr_engine_version": "5.3.4",
+      "mean_confidence": 0.949670867794486,
+      "line_count": 38,
+      "run_id": "68760fe7-73ad-4045-8f88-918c3c4fa178"
+    }
+  ]
+}

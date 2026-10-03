@@ -1,0 +1,324 @@
+{
+  "id": "12e51b35-5ba0-42c5-a475-5d850173860e",
+  "content_hash": "sha256:df2bd2309c83431dab21011f794ccc2645470f0161f14dc810c0c8be26ce29bb",
+  "source_sha256": "fc4f9c3e4730cb81baf0df82e557ab7e9d1dceded462a82fb063de13f778107b",
+  "upload_filename": "referral_letter.json",
+  "source_filename": "referral_letter.pdf",
+  "source_mime_type": "application/pdf",
+  "size_bytes": 78071,
+  "raw_storage_uri": "file://data/raw/df2bd2309c83431dab21011f794ccc2645470f0161f14dc810c0c8be26ce29bb.json",
+  "normalised_storage_uri": "file://data/normalised/df2bd2309c83431dab21011f794ccc2645470f0161f14dc810c0c8be26ce29bb.v1.1.0.json",
+  "document_type": "referral_letter",
+  "country_code": "SG",
+  "ocr_engine": "azure-document-intelligence",
+  "ocr_engine_version": "prebuilt-read/2024-11-30",
+  "ocr_processed_at": "2026-09-08T02:05:19+00:00",
+  "status": "embedded",
+  "error_code": null,
+  "error_message": null,
+  "ingested_at": "2026-10-03T17:39:55.401730+00:00",
+  "updated_at": "2026-10-03T17:39:55.429847+00:00",
+  "latest_run_id": "694e3eab-2698-4669-aced-713e83ff527c",
+  "stages": [
+    {
+      "stage": "receive",
+      "status": "succeeded",
+      "started_at": "2026-10-03T17:39:55.400728+00:00",
+      "finished_at": "2026-10-03T17:39:55.403020+00:00",
+      "duration_ms": 2,
+      "error": null,
+      "run_id": "694e3eab-2698-4669-aced-713e83ff527c"
+    },
+    {
+      "stage": "normalise",
+      "status": "succeeded",
+      "started_at": "2026-10-03T17:39:55.405373+00:00",
+      "finished_at": "2026-10-03T17:39:55.407582+00:00",
+      "duration_ms": 2,
+      "error": null,
+      "run_id": "694e3eab-2698-4669-aced-713e83ff527c"
+    },
+    {
+      "stage": "load",
+      "status": "succeeded",
+      "started_at": "2026-10-03T17:39:55.410119+00:00",
+      "finished_at": "2026-10-03T17:39:55.413700+00:00",
+      "duration_ms": 4,
+      "error": null,
+      "run_id": "694e3eab-2698-4669-aced-713e83ff527c"
+    },
+    {
+      "stage": "extract",
+      "status": "succeeded",
+      "started_at": "2026-10-03T17:39:55.416096+00:00",
+      "finished_at": "2026-10-03T17:39:55.418785+00:00",
+      "duration_ms": 3,
+      "error": null,
+      "run_id": "694e3eab-2698-4669-aced-713e83ff527c"
+    },
+    {
+      "stage": "quality",
+      "status": "succeeded",
+      "started_at": "2026-10-03T17:39:55.421369+00:00",
+      "finished_at": "2026-10-03T17:39:55.423316+00:00",
+      "duration_ms": 2,
+      "error": null,
+      "run_id": "694e3eab-2698-4669-aced-713e83ff527c"
+    },
+    {
+      "stage": "chunk",
+      "status": "succeeded",
+      "started_at": "2026-10-03T17:39:55.425681+00:00",
+      "finished_at": "2026-10-03T17:39:55.427223+00:00",
+      "duration_ms": 2,
+      "error": null,
+      "run_id": "694e3eab-2698-4669-aced-713e83ff527c"
+    },
+    {
+      "stage": "embed",
+      "status": "succeeded",
+      "started_at": "2026-10-03T17:39:55.429794+00:00",
+      "finished_at": "2026-10-03T17:39:55.454099+00:00",
+      "duration_ms": 24,
+      "error": null,
+      "run_id": "694e3eab-2698-4669-aced-713e83ff527c"
+    }
+  ],
+  "quality_checks": [
+    {
+      "check_name": "bbox_clamped",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "page_number": 1,
+        "clamped_count": 0
+      },
+      "page_number": 1,
+      "run_id": "694e3eab-2698-4669-aced-713e83ff527c"
+    },
+    {
+      "check_name": "document_type_supported",
+      "passed": true,
+      "severity": "error",
+      "details": {
+        "score": 8,
+        "document_type": "referral_letter",
+        "matched_keywords": [
+          "kindly review",
+          "referral",
+          "referral letter",
+          "referring provider"
+        ]
+      },
+      "page_number": null,
+      "run_id": "694e3eab-2698-4669-aced-713e83ff527c"
+    },
+    {
+      "check_name": "engine_supported",
+      "passed": true,
+      "severity": "error",
+      "details": {},
+      "page_number": null,
+      "run_id": "694e3eab-2698-4669-aced-713e83ff527c"
+    },
+    {
+      "check_name": "envelope_valid",
+      "passed": true,
+      "severity": "error",
+      "details": {},
+      "page_number": null,
+      "run_id": "694e3eab-2698-4669-aced-713e83ff527c"
+    },
+    {
+      "check_name": "field_claimant_name",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "message": null,
+        "validation_status": "valid"
+      },
+      "page_number": null,
+      "run_id": "694e3eab-2698-4669-aced-713e83ff527c"
+    },
+    {
+      "check_name": "field_provider_name",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "message": null,
+        "validation_status": "valid"
+      },
+      "page_number": null,
+      "run_id": "694e3eab-2698-4669-aced-713e83ff527c"
+    },
+    {
+      "check_name": "field_signature_presence",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "message": null,
+        "validation_status": "valid"
+      },
+      "page_number": null,
+      "run_id": "694e3eab-2698-4669-aced-713e83ff527c"
+    },
+    {
+      "check_name": "field_total_amount_paid",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "message": null,
+        "validation_status": "valid"
+      },
+      "page_number": null,
+      "run_id": "694e3eab-2698-4669-aced-713e83ff527c"
+    },
+    {
+      "check_name": "field_total_approved_amount",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "message": null,
+        "validation_status": "valid"
+      },
+      "page_number": null,
+      "run_id": "694e3eab-2698-4669-aced-713e83ff527c"
+    },
+    {
+      "check_name": "field_total_requested_amount",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "message": null,
+        "validation_status": "valid"
+      },
+      "page_number": null,
+      "run_id": "694e3eab-2698-4669-aced-713e83ff527c"
+    },
+    {
+      "check_name": "file_json",
+      "passed": true,
+      "severity": "error",
+      "details": {},
+      "page_number": null,
+      "run_id": "694e3eab-2698-4669-aced-713e83ff527c"
+    },
+    {
+      "check_name": "page_confidence",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "level": "document",
+        "threshold": 0.8,
+        "flagged_pages": []
+      },
+      "page_number": null,
+      "run_id": "694e3eab-2698-4669-aced-713e83ff527c"
+    },
+    {
+      "check_name": "page_confidence",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "observed": 0.95214492999493,
+        "threshold": 0.8,
+        "page_number": 1
+      },
+      "page_number": 1,
+      "run_id": "694e3eab-2698-4669-aced-713e83ff527c"
+    }
+  ],
+  "extracted_fields": [
+    {
+      "field_name": "claimant_name",
+      "raw_value": "MUHAMMAD RIZAL BIN OSMAN",
+      "normalised_value": "MUHAMMAD RIZAL BIN OSMAN",
+      "value_type": "text",
+      "validation_status": "valid",
+      "validation_message": null,
+      "source_line_ids": [
+        "ee8cc78d-bc22-4cab-bfb1-637799058cf0",
+        "8c54bdd0-14e9-4b99-adf4-991f7530ddae"
+      ],
+      "run_id": "694e3eab-2698-4669-aced-713e83ff527c"
+    },
+    {
+      "field_name": "provider_name",
+      "raw_value": "Harbourview Family Clinic Pte Ltd",
+      "normalised_value": "Harbourview Family Clinic Pte Ltd",
+      "value_type": "text",
+      "validation_status": "valid",
+      "validation_message": null,
+      "source_line_ids": [
+        "3efd532c-ba46-4324-ae2e-dd20f7a29ca8"
+      ],
+      "run_id": "694e3eab-2698-4669-aced-713e83ff527c"
+    },
+    {
+      "field_name": "signature_presence",
+      "raw_value": "Signature",
+      "normalised_value": true,
+      "value_type": "bool",
+      "validation_status": "valid",
+      "validation_message": null,
+      "source_line_ids": [
+        "70b56671-b9b8-462f-b792-b64905f828f9"
+      ],
+      "run_id": "694e3eab-2698-4669-aced-713e83ff527c"
+    },
+    {
+      "field_name": "total_amount_paid",
+      "raw_value": "SGD 850.00",
+      "normalised_value": 85000,
+      "value_type": "amount",
+      "validation_status": "valid",
+      "validation_message": null,
+      "source_line_ids": [
+        "e1d692f2-90b2-475b-b895-89752f51cbb0",
+        "f93ee873-f8d7-450b-8f1e-e1ae9f35122d"
+      ],
+      "run_id": "694e3eab-2698-4669-aced-713e83ff527c"
+    },
+    {
+      "field_name": "total_approved_amount",
+      "raw_value": "SGD 1,000.00",
+      "normalised_value": 100000,
+      "value_type": "amount",
+      "validation_status": "valid",
+      "validation_message": null,
+      "source_line_ids": [
+        "a7dc9856-86fc-4dc8-96ef-55d5e46e4299",
+        "195b4e02-e282-4ff6-a17b-c08fbf8124bf"
+      ],
+      "run_id": "694e3eab-2698-4669-aced-713e83ff527c"
+    },
+    {
+      "field_name": "total_requested_amount",
+      "raw_value": "SGD 1,200.00",
+      "normalised_value": 120000,
+      "value_type": "amount",
+      "validation_status": "valid",
+      "validation_message": null,
+      "source_line_ids": [
+        "dc9cb024-fb1e-4e3a-a08d-4a72aad1d4fb",
+        "50f5ea2a-8b46-469c-b6e8-1c255127b473"
+      ],
+      "run_id": "694e3eab-2698-4669-aced-713e83ff527c"
+    }
+  ],
+  "pages": [
+    {
+      "id": "5e848ef8-9077-4d8c-bbd7-be940fedc63c",
+      "page_number": 1,
+      "width": 8.2667,
+      "height": 11.6933,
+      "size_unit": "inch",
+      "size_reason": null,
+      "ocr_engine": "azure-document-intelligence",
+      "ocr_engine_version": "prebuilt-read/2024-11-30",
+      "mean_confidence": 0.95214492999493,
+      "line_count": 37,
+      "run_id": "694e3eab-2698-4669-aced-713e83ff527c"
+    }
+  ]
+}

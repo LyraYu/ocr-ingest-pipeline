@@ -1,0 +1,418 @@
+{
+  "id": "68a41e8c-5f22-47e3-a0fd-fd01bfb3107d",
+  "content_hash": "sha256:86a0961c8877a2ea8ed64351157ab3a6814295990c563401feee4361ed507361",
+  "source_sha256": "778f6aa09ed3bab55a2a2cc4cd68077c2070fe523aa3403f2006035a047e402d",
+  "upload_filename": "medical_certificate.json",
+  "source_filename": "medical_certificate.pdf",
+  "source_mime_type": "application/pdf",
+  "size_bytes": 128253,
+  "raw_storage_uri": "file://data/raw/86a0961c8877a2ea8ed64351157ab3a6814295990c563401feee4361ed507361.json",
+  "normalised_storage_uri": "file://data/normalised/86a0961c8877a2ea8ed64351157ab3a6814295990c563401feee4361ed507361.v1.1.0.json",
+  "document_type": "medical_certificate",
+  "country_code": "SG",
+  "ocr_engine": "aws-textract",
+  "ocr_engine_version": "DetectDocumentText/1.0",
+  "ocr_processed_at": "2026-09-02T03:12:44+00:00",
+  "status": "embedded",
+  "error_code": null,
+  "error_message": null,
+  "ingested_at": "2026-10-03T17:39:53.049243+00:00",
+  "updated_at": "2026-10-03T17:39:53.077052+00:00",
+  "latest_run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3",
+  "stages": [
+    {
+      "stage": "receive",
+      "status": "succeeded",
+      "started_at": "2026-10-03T17:39:53.047512+00:00",
+      "finished_at": "2026-10-03T17:39:53.051012+00:00",
+      "duration_ms": 3,
+      "error": null,
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "stage": "normalise",
+      "status": "succeeded",
+      "started_at": "2026-10-03T17:39:53.053505+00:00",
+      "finished_at": "2026-10-03T17:39:53.055599+00:00",
+      "duration_ms": 2,
+      "error": null,
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "stage": "load",
+      "status": "succeeded",
+      "started_at": "2026-10-03T17:39:53.058036+00:00",
+      "finished_at": "2026-10-03T17:39:53.061199+00:00",
+      "duration_ms": 3,
+      "error": null,
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "stage": "extract",
+      "status": "succeeded",
+      "started_at": "2026-10-03T17:39:53.063558+00:00",
+      "finished_at": "2026-10-03T17:39:53.066456+00:00",
+      "duration_ms": 3,
+      "error": null,
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "stage": "quality",
+      "status": "succeeded",
+      "started_at": "2026-10-03T17:39:53.068833+00:00",
+      "finished_at": "2026-10-03T17:39:53.070560+00:00",
+      "duration_ms": 2,
+      "error": null,
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "stage": "chunk",
+      "status": "succeeded",
+      "started_at": "2026-10-03T17:39:53.072953+00:00",
+      "finished_at": "2026-10-03T17:39:53.074501+00:00",
+      "duration_ms": 2,
+      "error": null,
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "stage": "embed",
+      "status": "succeeded",
+      "started_at": "2026-10-03T17:39:53.077004+00:00",
+      "finished_at": "2026-10-03T17:39:55.294181+00:00",
+      "duration_ms": 2217,
+      "error": null,
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    }
+  ],
+  "quality_checks": [
+    {
+      "check_name": "bbox_clamped",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "page_number": 1,
+        "clamped_count": 0
+      },
+      "page_number": 1,
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "check_name": "document_type_supported",
+      "passed": true,
+      "severity": "error",
+      "details": {
+        "score": 5,
+        "document_type": "medical_certificate",
+        "matched_keywords": [
+          "medical certificate",
+          "unfit for duty"
+        ]
+      },
+      "page_number": null,
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "check_name": "engine_supported",
+      "passed": true,
+      "severity": "error",
+      "details": {},
+      "page_number": null,
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "check_name": "envelope_valid",
+      "passed": true,
+      "severity": "error",
+      "details": {},
+      "page_number": null,
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "check_name": "field_claimant_address",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "message": null,
+        "validation_status": "valid"
+      },
+      "page_number": null,
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "check_name": "field_claimant_date_of_birth",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "message": null,
+        "validation_status": "valid"
+      },
+      "page_number": null,
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "check_name": "field_claimant_name",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "message": null,
+        "validation_status": "valid"
+      },
+      "page_number": null,
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "check_name": "field_date_of_mc",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "message": null,
+        "validation_status": "valid"
+      },
+      "page_number": null,
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "check_name": "field_diagnosis_name",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "message": null,
+        "validation_status": "valid"
+      },
+      "page_number": null,
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "check_name": "field_discharge_date_time",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "message": null,
+        "validation_status": "valid"
+      },
+      "page_number": null,
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "check_name": "field_icd_code",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "message": null,
+        "validation_status": "valid"
+      },
+      "page_number": null,
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "check_name": "field_mc_days",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "message": null,
+        "validation_status": "valid"
+      },
+      "page_number": null,
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "check_name": "field_provider_name",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "message": null,
+        "validation_status": "valid"
+      },
+      "page_number": null,
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "check_name": "field_submission_date_time",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "message": null,
+        "validation_status": "valid"
+      },
+      "page_number": null,
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "check_name": "file_json",
+      "passed": true,
+      "severity": "error",
+      "details": {},
+      "page_number": null,
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "check_name": "page_confidence",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "level": "document",
+        "threshold": 0.8,
+        "flagged_pages": []
+      },
+      "page_number": null,
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "check_name": "page_confidence",
+      "passed": true,
+      "severity": "warning",
+      "details": {
+        "observed": 0.947992258064516,
+        "threshold": 0.8,
+        "page_number": 1
+      },
+      "page_number": 1,
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    }
+  ],
+  "extracted_fields": [
+    {
+      "field_name": "claimant_address",
+      "raw_value": "Blk 123 Sample Avenue 4 #05-67 Singapore 560123",
+      "normalised_value": "Blk 123 Sample Avenue 4 #05-67 Singapore 560123",
+      "value_type": "text",
+      "validation_status": "valid",
+      "validation_message": null,
+      "source_line_ids": [
+        "7f89d64e-d88c-40d3-85ff-f99cf27bd63d",
+        "52d5a012-2c87-4a3f-8fd3-68b73e33ce92"
+      ],
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "field_name": "claimant_date_of_birth",
+      "raw_value": "14/03/1988",
+      "normalised_value": "14/03/1988",
+      "value_type": "date",
+      "validation_status": "valid",
+      "validation_message": null,
+      "source_line_ids": [
+        "7590ad81-0189-4423-997c-21c9e7d9738b",
+        "64011280-cae9-493a-96d7-a94362234d52"
+      ],
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "field_name": "claimant_name",
+      "raw_value": "TAN WEI MING",
+      "normalised_value": "TAN WEI MING",
+      "value_type": "text",
+      "validation_status": "valid",
+      "validation_message": null,
+      "source_line_ids": [
+        "8a90eb29-1eaf-4cf0-b5f6-6f97b82c4884",
+        "27031f90-9580-4be4-90e8-9852be61b423"
+      ],
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "field_name": "date_of_mc",
+      "raw_value": "02/09/2026",
+      "normalised_value": "02/09/2026",
+      "value_type": "date",
+      "validation_status": "valid",
+      "validation_message": null,
+      "source_line_ids": [
+        "5a682a24-9304-4bc2-9922-09c624dfb613",
+        "f33bfcaf-6597-44e0-96a9-51a919233739"
+      ],
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "field_name": "diagnosis_name",
+      "raw_value": "Acute gastroenteritis",
+      "normalised_value": "Acute gastroenteritis",
+      "value_type": "text",
+      "validation_status": "valid",
+      "validation_message": null,
+      "source_line_ids": [
+        "deda8f83-0911-4d75-a2c8-5b54b6db7d1b",
+        "b4a31966-84ff-44e2-b36e-6300c9c3567e"
+      ],
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "field_name": "discharge_date_time",
+      "raw_value": "02/09/2026 10:20",
+      "normalised_value": "02/09/2026 10:20",
+      "value_type": "datetime",
+      "validation_status": "valid",
+      "validation_message": null,
+      "source_line_ids": [
+        "0bfb5f6b-8ede-48d7-b762-c4c23352b47a",
+        "1db3614c-8073-492c-84c2-c837d9552db8"
+      ],
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "field_name": "icd_code",
+      "raw_value": "A09",
+      "normalised_value": "A09",
+      "value_type": "text",
+      "validation_status": "valid",
+      "validation_message": null,
+      "source_line_ids": [
+        "da256ee0-eaf8-4793-8721-ff383c2ba38b",
+        "26da8a25-53cd-4eea-9211-741cad897b5a"
+      ],
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "field_name": "mc_days",
+      "raw_value": "2",
+      "normalised_value": 2,
+      "value_type": "int",
+      "validation_status": "valid",
+      "validation_message": null,
+      "source_line_ids": [
+        "469d3b04-22ab-428f-8029-e96c46eee12d"
+      ],
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "field_name": "provider_name",
+      "raw_value": "HARBOURVIEW FAMILY CLINIC PTE LTD",
+      "normalised_value": "HARBOURVIEW FAMILY CLINIC PTE LTD",
+      "value_type": "text",
+      "validation_status": "valid",
+      "validation_message": null,
+      "source_line_ids": [
+        "7428be04-1339-4397-8964-b2b28ef9d823"
+      ],
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    },
+    {
+      "field_name": "submission_date_time",
+      "raw_value": "02/09/2026 11:05",
+      "normalised_value": "02/09/2026 11:05",
+      "value_type": "datetime",
+      "validation_status": "valid",
+      "validation_message": null,
+      "source_line_ids": [
+        "e6ad95c8-e891-4edd-8a8d-19899cc3c483",
+        "64be3978-1c51-4116-b920-aa8ee03c2da5"
+      ],
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    }
+  ],
+  "pages": [
+    {
+      "id": "5bc66520-0ce5-48df-9e92-f8c53b80d63c",
+      "page_number": 1,
+      "width": null,
+      "height": null,
+      "size_unit": null,
+      "size_reason": "aws-textract reports only ratio coordinates, no absolute page size",
+      "ocr_engine": "aws-textract",
+      "ocr_engine_version": "DetectDocumentText/1.0",
+      "mean_confidence": 0.947992258064516,
+      "line_count": 31,
+      "run_id": "7e034abd-525f-4d48-9ee6-82dcfa864fe3"
+    }
+  ]
+}

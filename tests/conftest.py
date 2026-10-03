@@ -1,10 +1,44 @@
 import json
 import os
 from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
 
 import pytest
 
 SAMPLES_DIR = Path(__file__).resolve().parents[1] / "samples"
+FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
+TEST_DB_NAME = "docs_test"
+
+
+def _with_database(url: str, name: str) -> str:
+    parts = urlsplit(url)
+    return urlunsplit(parts._replace(path=f"/{name}"))
+
+
+def pytest_configure(config):
+    """Point the whole test session at the `docs_test` database, never at the
+    database DATABASE_URL names (`docs`, the one the API and CLI use). The database
+    is created if missing. TEST_DATABASE_URL overrides the derived URL."""
+    base_url = os.environ.get("DATABASE_URL")
+    if not base_url:
+        return  # pure unit tests can still run; DB tests fail on the missing setting
+    test_url = os.environ.get("TEST_DATABASE_URL") or _with_database(base_url, TEST_DB_NAME)
+    test_db = urlsplit(test_url).path.lstrip("/")
+    if test_db == urlsplit(base_url).path.lstrip("/") and not os.environ.get("TEST_DATABASE_URL"):
+        raise pytest.UsageError(f"refusing to run tests against the application database {test_db!r}")
+
+    import psycopg
+    from psycopg import sql
+
+    with psycopg.connect(_with_database(test_url, "postgres"), autocommit=True) as admin:
+        exists = admin.execute("select 1 from pg_database where datname = %s", (test_db,)).fetchone()
+        if not exists:
+            admin.execute(sql.SQL("create database {}").format(sql.Identifier(test_db)))
+
+    os.environ["DATABASE_URL"] = test_url
+    from app.config import get_settings
+
+    get_settings.cache_clear()
 
 # Child tables first is not required with CASCADE, but keeps intent explicit.
 DATA_TABLES = (

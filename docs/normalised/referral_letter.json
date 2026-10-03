@@ -1,0 +1,509 @@
+{
+  "normaliser_version": "1.1.0",
+  "normalised_at": "2026-10-03T17:39:55.407065Z",
+  "coordinate_system": "fraction_of_page_0_1_origin_top_left",
+  "confidence_scale": "0_1",
+  "source": {
+    "original_filename": "referral_letter.pdf",
+    "mime_type": "application/pdf",
+    "source_sha256": "fc4f9c3e4730cb81baf0df82e557ab7e9d1dceded462a82fb063de13f778107b",
+    "country_code": "SG"
+  },
+  "engine": {
+    "name": "azure-document-intelligence",
+    "version": "prebuilt-read/2024-11-30",
+    "processed_at": "2026-09-08T02:05:19Z"
+  },
+  "pages": [
+    {
+      "page_number": 1,
+      "width": 8.2667,
+      "height": 11.6933,
+      "size_unit": "inch",
+      "size_reason": null,
+      "lines": [
+        {
+          "line_index": 0,
+          "text": "HARBOURVIEW FAMILY CLINIC PTE LTD",
+          "bbox": [
+            0.08064886835133729,
+            0.06271112517424507,
+            0.4999939516372918,
+            0.07981493675865667
+          ],
+          "confidence": 0.9603999999999999,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 1,
+          "text": "12 Example Marina Way #01-05 Singapore 018900 Tel: 6000 0000",
+          "bbox": [
+            0.08064886835133729,
+            0.08780241676857686,
+            0.5572598497586703,
+            0.0986291295015094
+          ],
+          "confidence": 0.9423999999999999,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 2,
+          "text": "REFERRAL LETTER",
+          "bbox": [
+            0.3629017624928932,
+            0.12029965877895889,
+            0.5790339555082439,
+            0.1396782773040972
+          ],
+          "confidence": 0.947,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 3,
+          "text": "Date:",
+          "bbox": [
+            0.08064886835133729,
+            0.16134880658154668,
+            0.12499546372796885,
+            0.172748497002557
+          ],
+          "confidence": 0.926,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 4,
+          "text": "08/09/2026",
+          "bbox": [
+            0.24193450832859545,
+            0.16134880658154668,
+            0.3306397958072749,
+            0.172748497002557
+          ],
+          "confidence": 0.915,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 5,
+          "text": "To:",
+          "bbox": [
+            0.08064886835133729,
+            0.18072742510668502,
+            0.10726166426748279,
+            0.19213566743348756
+          ],
+          "confidence": 0.992,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 6,
+          "text": "Dr. Chua Kok Leong",
+          "bbox": [
+            0.24193450832859545,
+            0.18072742510668502,
+            0.3967725936588965,
+            0.19213566743348756
+          ],
+          "confidence": 0.92275,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 7,
+          "text": "Eastpoint Orthopaedic Specialists",
+          "bbox": [
+            0.24193450832859545,
+            0.20011459553761554,
+            0.5314454377200092,
+            0.21151428595862587
+          ],
+          "confidence": 0.9289999999999999,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 8,
+          "text": "3 Example Hospital Drive #08-02 Singapore 169000",
+          "bbox": [
+            0.24193450832859545,
+            0.21950176596854606,
+            0.6580618626537796,
+            0.23090145638955642
+          ],
+          "confidence": 0.9347142857142857,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 9,
+          "text": "Re: Patient",
+          "bbox": [
+            0.08064886835133729,
+            0.25256343376121365,
+            0.17661219107987466,
+            0.2639716760880162
+          ],
+          "confidence": 0.921,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 10,
+          "text": "MUHAMMAD RIZAL BIN OSMAN",
+          "bbox": [
+            0.24193450832859545,
+            0.25256343376121365,
+            0.44999818549118753,
+            0.2639716760880162
+          ],
+          "confidence": 0.9555,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 11,
+          "text": "NRIC/FIN:",
+          "bbox": [
+            0.08064886835133729,
+            0.27195060419214423,
+            0.1604872560997738,
+            0.28335029461315453
+          ],
+          "confidence": 0.999,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 12,
+          "text": "S0000003C",
+          "bbox": [
+            0.24193450832859545,
+            0.27195060419214423,
+            0.32177289607703197,
+            0.28335029461315453
+          ],
+          "confidence": 0.95,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 13,
+          "text": "DOB:",
+          "bbox": [
+            0.5241874024701514,
+            0.27195060419214423,
+            0.5596791948419563,
+            0.28335029461315453
+          ],
+          "confidence": 0.96,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 14,
+          "text": "09/06/1979",
+          "bbox": [
+            0.5806428199886291,
+            0.27195060419214423,
+            0.6693481074673086,
+            0.28335029461315453
+          ],
+          "confidence": 0.944,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 15,
+          "text": "Employer:",
+          "bbox": [
+            0.08064886835133729,
+            0.2913377746230747,
+            0.1604872560997738,
+            0.30273746504408505
+          ],
+          "confidence": 0.959,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 16,
+          "text": "Example Logistics Pte Ltd",
+          "bbox": [
+            0.24193450832859545,
+            0.2913377746230747,
+            0.45886508522143055,
+            0.30273746504408505
+          ],
+          "confidence": 0.92925,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 17,
+          "text": "Policy No:",
+          "bbox": [
+            0.5241874024701514,
+            0.2913377746230747,
+            0.6112838254684457,
+            0.30273746504408505
+          ],
+          "confidence": 0.987,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 18,
+          "text": "POL-SG-000456",
+          "bbox": [
+            0.6290297216543482,
+            0.2913377746230747,
+            0.7443478050491732,
+            0.30273746504408505
+          ],
+          "confidence": 0.994,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 19,
+          "text": "Dear Doctor,",
+          "bbox": [
+            0.08064886835133729,
+            0.3243994424157423,
+            0.1854790908101177,
+            0.33580768474254485
+          ],
+          "confidence": 0.9570000000000001,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 20,
+          "text": "Kindly review the above patient for persistent right knee pain of",
+          "bbox": [
+            0.08064886835133729,
+            0.34378661284667283,
+            0.6411264470707779,
+            0.3551863032676832
+          ],
+          "confidence": 0.9452727272727273,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 21,
+          "text": "3 months duration, not responding to NSAIDs and physiotherapy.",
+          "bbox": [
+            0.08064886835133729,
+            0.36317378327760336,
+            0.6177434768408192,
+            0.3745734736986137
+          ],
+          "confidence": 0.9254444444444445,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 22,
+          "text": "Provisional diagnosis: Right knee medial meniscus tear (M23.2).",
+          "bbox": [
+            0.08064886835133729,
+            0.38255240180274175,
+            0.6282192410514473,
+            0.39396064412954424
+          ],
+          "confidence": 0.931,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 23,
+          "text": "MRI right knee and specialist consultation requested.",
+          "bbox": [
+            0.08064886835133729,
+            0.40193957223367227,
+            0.541122818053153,
+            0.4133392626546826
+          ],
+          "confidence": 0.9530000000000001,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 24,
+          "text": "Pre-authorisation summary",
+          "bbox": [
+            0.08064886835133729,
+            0.4350097919321321,
+            0.3209624154741312,
+            0.4475468858235057
+          ],
+          "confidence": 0.9775,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 25,
+          "text": "Total Requested Amount:",
+          "bbox": [
+            0.08064886835133729,
+            0.45553436583342594,
+            0.28145451026407153,
+            0.4669340562544363
+          ],
+          "confidence": 0.952,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 26,
+          "text": "SGD 1,200.00",
+          "bbox": [
+            0.4193571800113709,
+            0.45553436583342594,
+            0.5241874024701514,
+            0.4669340562544363
+          ],
+          "confidence": 0.961,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 27,
+          "text": "Total Approved Amount:",
+          "bbox": [
+            0.08064886835133729,
+            0.47491298435856427,
+            0.27257551380841205,
+            0.4863212266853668
+          ],
+          "confidence": 0.9586666666666667,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 28,
+          "text": "SGD 1,000.00",
+          "bbox": [
+            0.4193571800113709,
+            0.47491298435856427,
+            0.5241874024701514,
+            0.4863212266853668
+          ],
+          "confidence": 0.935,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 29,
+          "text": "Total Amount Paid:",
+          "bbox": [
+            0.08064886835133729,
+            0.49430015478949485,
+            0.23709581816202352,
+            0.505699845210505
+          ],
+          "confidence": 0.9496666666666665,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 30,
+          "text": "SGD 850.00",
+          "bbox": [
+            0.4193571800113709,
+            0.49430015478949485,
+            0.5064536030096652,
+            0.505699845210505
+          ],
+          "confidence": 0.982,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 31,
+          "text": "Thank you for seeing this patient.",
+          "bbox": [
+            0.08064886835133729,
+            0.5273703744879545,
+            0.37418800730642215,
+            0.538770064908965
+          ],
+          "confidence": 0.9608333333333333,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 32,
+          "text": "Yours sincerely,",
+          "bbox": [
+            0.08064886835133729,
+            0.5604320422806223,
+            0.22097088318192265,
+            0.5718402846074248
+          ],
+          "confidence": 0.971,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 33,
+          "text": "Signature: [signed]",
+          "bbox": [
+            0.08064886835133729,
+            0.5798192127115528,
+            0.24758367909806814,
+            0.591218903132563
+          ],
+          "confidence": 0.9415,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 34,
+          "text": "Dr. Lim Hui Min MCR No: M00000Z",
+          "bbox": [
+            0.08064886835133729,
+            0.5992063831424833,
+            0.3459663469098915,
+            0.6106060735634936
+          ],
+          "confidence": 0.9514285714285714,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 35,
+          "text": "Referring provider: Harbourview Family Clinic Pte Ltd",
+          "bbox": [
+            0.08064886835133729,
+            0.6185850016676215,
+            0.541122818053153,
+            0.6299932439944241
+          ],
+          "confidence": 0.9562857142857143,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        },
+        {
+          "line_index": 36,
+          "text": "Pre-authorisation issued via Fullerton Health network, ref FH-SG-PA-000789",
+          "bbox": [
+            0.08064886835133729,
+            0.6379721720985522,
+            0.6120943060713464,
+            0.6476614813611212
+          ],
+          "confidence": 0.95275,
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
+        }
+      ]
+    }
+  ]
+}

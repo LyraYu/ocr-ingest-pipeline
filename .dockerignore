@@ -1,6 +1,12 @@
 .venv
-.git
 data
+docs
 .env
 **/__pycache__
 .pytest_cache
+CODE_VERSION
+# Keep only what app/version.py needs to read the commit sha at build time.
+.git
+!.git/HEAD
+!.git/refs
+!.git/packed-refs

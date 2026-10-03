@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
+from app.version import runtime_code_version
+
 DEFAULT_COUNTRY_CODE = "SG"
 
 
@@ -39,5 +41,5 @@ def get_settings() -> Settings:
         quality_min_page_confidence=float(
             os.environ.get("QUALITY_MIN_PAGE_CONFIDENCE", "0.80")
         ),
-        code_version=os.environ.get("CODE_VERSION") or "unknown",
+        code_version=runtime_code_version(),
     )

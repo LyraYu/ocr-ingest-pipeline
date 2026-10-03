@@ -1,0 +1,59 @@
+{
+  "request": {
+    "query": "medical leave for acute gastroenteritis",
+    "top_k": 3,
+    "filters": {
+      "document_type": "medical_certificate",
+      "country_code": "SG"
+    }
+  },
+  "response": {
+    "results": [
+      {
+        "chunk_id": "3dca9494-827b-4c50-a353-15f1394ba687",
+        "document_id": "68a41e8c-5f22-47e3-a0fd-fd01bfb3107d",
+        "document_type": "medical_certificate",
+        "page": 1,
+        "score": 0.4214858114719391,
+        "text": "HARBOURVIEW FAMILY CLINIC PTE LTD\n12 Example Marina Way #01-05 Singapore 018900\nTel: 6000 0000 Fax: 6000 0001\nMEDICAL CERTIFICATE\nPatient Name:\nTAN WEI MING\nNRIC/FIN:\nS0000001A\nDate of Birth:\n14/03/1988\nAddress:\nBlk 123 Sample Avenue 4 #05-67 Singapore 560123\nDate/Time of Consultation:\n02/09/2026 09:45\nDiagnosis:\nAcute gastroenteritis\nICD-10 Code:\nA09",
+        "bbox": [
+          0.080645,
+          0.062714,
+          0.671774,
+          0.321551
+        ],
+        "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
+      },
+      {
+        "chunk_id": "ae286385-f40e-4652-9088-58b07a1ee79a",
+        "document_id": "68a41e8c-5f22-47e3-a0fd-fd01bfb3107d",
+        "document_type": "medical_certificate",
+        "page": 1,
+        "score": 0.29898862248727,
+        "text": "A09\nThis is to certify that the above-named patient is unfit for duty\nfor a period of 2 day(s) from 02/09/2026 to 03/09/2026 inclusive.\nDate of MC:\n02/09/2026\nDischarge Date/Time:\n02/09/2026 10:20\nSubmission Date/Time:\n02/09/2026 11:05\nDr. Lim Hui Min\nMBBS (Synthetic University) MCR No: M00000Z\nSignature: [signed]\nThis certificate is not valid for absence from court attendance.",
+        "bbox": [
+          0.080645,
+          0.310148,
+          0.641129,
+          0.562144
+        ],
+        "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
+      },
+      {
+        "chunk_id": "a4a233d7-7a5e-46ea-8db5-78ac6c17b1c4",
+        "document_id": "68a41e8c-5f22-47e3-a0fd-fd01bfb3107d",
+        "document_type": "medical_certificate",
+        "page": 1,
+        "score": 0.22541196644306183,
+        "text": "This certificate is not valid for absence from court attendance.\nPanel clinic of Fullerton Health network - claims ref FH-SG-0000123",
+        "bbox": [
+          0.080645,
+          0.552452,
+          0.559677,
+          0.579817
+        ],
+        "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
+      }
+    ]
+  }
+}

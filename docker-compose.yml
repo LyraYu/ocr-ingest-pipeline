@@ -9,20 +9,24 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U docs -d docs"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U docs -d docs"]  # TCP: only up after init scripts ran
       interval: 2s
       timeout: 5s
       retries: 30
 
   api:
-    build: .
+    build:
+      context: .
+      args:
+        # Optional override; empty → the image reads the sha from .git (app/version.py).
+        CODE_VERSION: ${CODE_VERSION:-}
     environment:
       DATABASE_URL: postgresql://docs:docs@db:5432/docs
       DATA_DIR: /app/data
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
       QUALITY_MIN_PAGE_CONFIDENCE: ${QUALITY_MIN_PAGE_CONFIDENCE:-0.80}
-      CODE_VERSION: ${CODE_VERSION:-unknown}
     depends_on:
       db:
         condition: service_healthy

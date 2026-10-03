@@ -42,7 +42,7 @@ from app.extraction import UnsupportedDocumentTypeError
 from app.extraction.classify import classify
 from app.extraction.rules import SourceLine, extract
 from app.extraction.validate import validate_field
-from app.ocr import NORMALISER_VERSION, OcrInputError, normalise_country_code
+from app.ocr import NORMALISER_VERSION, InvalidCountryCodeError, OcrInputError, normalise_country_code
 from app.ocr.envelope import Envelope, parse_json, validate_envelope
 from app.ocr.registry import normalise_envelope
 from app.ocr.schema import NormalisedDocument
@@ -135,6 +135,19 @@ def receive_checks(error: OcrInputError | None) -> list[dict]:
     return checks
 
 
+ENVELOPE_COUNTRY_CHECK = "envelope_country_code_invalid"
+
+
+def envelope_country_warning(form_country_code: str) -> dict:
+    """Written only when the problem exists: the envelope's country code was malformed
+    and the form field's valid value was used instead."""
+    return {
+        "check_name": ENVELOPE_COUNTRY_CHECK, "passed": False, "severity": "warning",
+        "details": {"message": "envelope source.country_code is not two letters; form field used",
+                    "used_country_code": form_country_code},
+    }
+
+
 @dataclass(frozen=True)
 class ReceiveOutcome:
     document_id: UUID
@@ -188,7 +201,10 @@ def stage_receive(
 
     `country_code` is the (already normalised) form field; resolution is
     form field → envelope `source.country_code` → DEFAULT_COUNTRY_CODE.
-    A duplicate writes nothing and returns the existing document.
+    A malformed envelope country code is rejected (invalid_country_code) unless the
+    form field supplies a valid one; then the upload is accepted with a warning row
+    `envelope_country_code_invalid`. A duplicate writes nothing and returns the
+    existing document.
     """
     started_at = datetime.now(UTC)
     t0 = time.perf_counter()
@@ -204,12 +220,20 @@ def stage_receive(
     error: OcrInputError | None = None
     metadata: dict = {}
     envelope_country: str | None = None
+    extra_checks: list[dict] = []
     try:
         data = parse_json(file_bytes)
         try:
             envelope = validate_envelope(data)
             metadata = _metadata_from_envelope(envelope)
             envelope_country = envelope.source.country_code
+            if envelope.source_country_code_invalid:
+                if not country_code:
+                    raise InvalidCountryCodeError(
+                        "envelope source.country_code must be two letters (no country_code form field)",
+                        check="envelope_valid",
+                    )
+                extra_checks.append(envelope_country_warning(country_code))
         except OcrInputError:
             metadata, envelope_country = _metadata_from_rejected_json(data)
             raise
@@ -233,7 +257,10 @@ def stage_receive(
         if document_id is None:  # lost a race with a concurrent upload of the same bytes
             existing = documents.get_by_content_hash(conn, hash_value)
             return ReceiveOutcome(existing["id"], duplicate=True, failed=existing["status"] == "failed")
-        quality_checks.replace(conn, document_id, run_id, list(RECEIVE_CHECKS), receive_checks(error))
+        quality_checks.replace(
+            conn, document_id, run_id, [*RECEIVE_CHECKS, ENVELOPE_COUNTRY_CHECK],
+            receive_checks(error) + extra_checks,
+        )
         document_stages.record(
             conn, document_id, "receive", "failed" if error else "succeeded", started_at,
             datetime.now(UTC), round((time.perf_counter() - t0) * 1000), run_id,

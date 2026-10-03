@@ -1,6 +1,5 @@
 """CLI entry point: `python -m app.cli <command>`."""
 
-import logging
 from pathlib import Path
 
 import typer
@@ -12,6 +11,7 @@ from app.embedding import get_embedder
 from app.ocr import InvalidCountryCodeError, normalise_country_code
 from app.pipeline.runner import describe_document, finish_run, run_pipeline, start_run
 from app.pipeline.stages import PRE_EMBED_STAGES, StageFailed, embed_documents, stage_chunk
+from app.security import pii
 
 app = typer.Typer(no_args_is_help=True, add_completion=False)
 
@@ -19,7 +19,7 @@ app = typer.Typer(no_args_is_help=True, add_completion=False)
 @app.callback()
 def main() -> None:
     """Document ingestion pipeline."""
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+    pii.install()  # PII masking on every log handler (CLAUDE.md §8)
 
 
 @app.command()
@@ -50,7 +50,9 @@ def ingest(
     """Ingest every file in FOLDER (non-recursive, sorted by name) under one pipeline run.
 
     Each file runs through receive → chunk; then all new chunks of the batch are
-    embedded in one encode call."""
+    embedded in one encode call. Pending migrations are applied first, so this works
+    on a fresh database (e.g. right after `docker compose up -d`)."""
+    run_migrations()
     files = sorted(p for p in folder.iterdir() if p.is_file())
     stats = {"processed": 0, "duplicate": 0, "failed": 0}
     with connect(autocommit=True) as conn:
