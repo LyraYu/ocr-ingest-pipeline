@@ -1,4 +1,4 @@
-from app.db.migrate import migrate
+from app.db.migrate import MIGRATIONS_DIR, migrate
 
 EXPECTED_TABLES = {
     "schema_migrations", "pipeline_runs", "documents", "document_stages", "document_pages",
@@ -18,7 +18,8 @@ def test_schema_applied_and_migrate_is_idempotent(db_conn):
     assert EXPECTED_TABLES <= tables
     assert EXPECTED_VIEWS <= views
     applied = [r[0] for r in db_conn.execute("select filename from schema_migrations order by filename")]
-    assert applied == ["001_initial.sql"]
+    assert applied == sorted(p.name for p in MIGRATIONS_DIR.glob("*.sql"))
+    assert applied[:2] == ["001_initial.sql", "002_info_severity_and_country_error.sql"]
     assert db_conn.execute("select 1 from pg_extension where extname = 'vector'").fetchone()
     assert db_conn.execute(
         "select 1 from pg_indexes where indexname = 'chunk_embeddings_embedding_hnsw_idx'"

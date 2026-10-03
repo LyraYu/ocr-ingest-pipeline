@@ -28,7 +28,9 @@ def list_for_document(conn: psycopg.Connection, document_id: UUID) -> list[dict]
     return fetch_all(
         conn,
         """
-        select l.id, p.page_number, l.line_index, l.text
+        select l.id, l.page_id, p.page_number, l.line_index, l.text,
+               l.bbox_x0::float8 as x0, l.bbox_y0::float8 as y0,
+               l.bbox_x1::float8 as x1, l.bbox_y1::float8 as y1
           from ocr_lines l
           join document_pages p on p.id = l.page_id
          where l.document_id = %s

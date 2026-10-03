@@ -30,6 +30,10 @@ services:
       - "8000:8000"
     volumes:
       - ./data:/app/data
+      # Hugging Face cache. A new named volume starts as a copy of the image's cache
+      # (default model baked in); models downloaded later (reembed) persist here.
+      - hf-cache:/opt/hf-cache
 
 volumes:
   pgdata:
+  hf-cache:

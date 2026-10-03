@@ -84,7 +84,7 @@ def test_sample_extraction(db_conn, sample_bytes_by_engine, samples_by_engine, e
     result = run_pipeline(sample_bytes_by_engine[engine], f"{engine}.json", conn=db_conn)
 
     assert result.error_code is None
-    assert result.status == "extracted"
+    assert result.status == "embedded"
     assert result.document_type == expected_type(samples_by_engine[engine])
     fields = fields_of(db_conn, result.document_id)
     assert fields["claimant_name"][0] == "valid"
@@ -169,8 +169,9 @@ def test_receive_checks_for_rejected_files(db_conn, samples_by_engine):
     unknown = copy.deepcopy(samples_by_engine["tesseract"])
     unknown["ocr"]["engine"] = "google-vision"
     cases = {
-        b"not json at all": ("unreadable_file", {"file_json": False, "envelope_valid": False, "engine_supported": False}),
-        b'{"hello": "world"}': ("unsupported_ocr_format", {"file_json": True, "envelope_valid": False, "engine_supported": False}),
+        # Only checks that ran get a row.
+        b"not json at all": ("unreadable_file", {"file_json": False}),
+        b'{"hello": "world"}': ("unsupported_ocr_format", {"file_json": True, "envelope_valid": False}),
         json.dumps(unknown).encode(): ("unsupported_ocr_format", {"file_json": True, "envelope_valid": True, "engine_supported": False}),
     }
     for payload, (code, expected) in cases.items():
@@ -180,8 +181,8 @@ def test_receive_checks_for_rejected_files(db_conn, samples_by_engine):
             "select check_name, passed, details from quality_checks where document_id = %s", (result.document_id,)
         ).fetchall()
         assert {name: passed for name, passed, _ in rows} == expected
-        failed = [details for _, passed, details in rows if not passed]
-        assert sum(d["evaluated"] for d in failed) == 1  # exactly one check actually failed
+        [failed] = [details for _, passed, details in rows if not passed]
+        assert failed["error_code"] == code
         quarantined = db_conn.execute(
             "select error_code from v_quarantine where document_id = %s", (result.document_id,)
         ).fetchone()
@@ -200,7 +201,7 @@ def test_low_confidence_and_clamped_boxes_are_flagged_not_failed(db_conn, client
 
     assert response.status_code == 201
     body = response.json()
-    assert body["status"] == "extracted"
+    assert body["status"] == "embedded"
     assert body["quality_flags"] == ["bbox_clamped", "page_confidence"]
     doc_id = body["document_id"]
     page_checks = {
@@ -219,7 +220,7 @@ def test_low_confidence_and_clamped_boxes_are_flagged_not_failed(db_conn, client
     quarantined = db_conn.execute(
         "select status, error_code, failed_checks from v_quarantine where document_id = %s", (doc_id,)
     ).fetchone()
-    assert quarantined == ("extracted", None, ["bbox_clamped", "page_confidence"])
+    assert quarantined == ("embedded", None, ["bbox_clamped", "page_confidence"])
 
 
 def test_clean_documents_are_not_quarantined(db_conn):

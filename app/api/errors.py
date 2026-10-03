@@ -6,6 +6,7 @@ ERROR_STATUS = {
     "unsupported_ocr_format": 422,
     "unsupported_document_type": 422,
     "invalid_country_code": 422,
+    "invalid_request": 422,
     "not_found": 404,
     "internal_server_error": 500,
 }

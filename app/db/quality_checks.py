@@ -25,7 +25,7 @@ def failed_check_names(conn: psycopg.Connection, document_id: UUID) -> list[str]
         conn,
         """
         select distinct check_name from quality_checks
-         where document_id = %s and not passed
+         where document_id = %s and not passed and severity in ('error', 'warning')
          order by check_name
         """,
         (document_id,),

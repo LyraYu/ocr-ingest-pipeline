@@ -37,11 +37,12 @@ def insert(conn: psycopg.Connection, **values) -> UUID | None:
     return row[0] if row else None
 
 
-def set_status(conn: psycopg.Connection, document_id: UUID, status: str, run_id: UUID) -> None:
+def set_status(conn: psycopg.Connection, document_id: UUID, status: str | None, run_id: UUID) -> None:
+    """status None keeps the current status (stages that never move the state machine)."""
     conn.execute(
         """
         update documents
-           set status = %s, error_code = null, error_message = null,
+           set status = coalesce(%s, status), error_code = null, error_message = null,
                latest_run_id = %s, updated_at = now()
          where id = %s
         """,

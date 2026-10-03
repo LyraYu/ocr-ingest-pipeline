@@ -10,7 +10,12 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, ValidationError
 
-from app.ocr import UnreadableFileError, UnsupportedFormatError, describe_validation_error
+from app.ocr import (
+    UnreadableFileError,
+    UnsupportedFormatError,
+    describe_validation_error,
+    normalise_country_code,
+)
 from app.ocr.registry import get_engine
 from app.ocr.schema import SourceInfo
 
@@ -41,9 +46,10 @@ def parse_json(file_bytes: bytes) -> object:
 
 
 def _normalise_source(source: object) -> object:
-    """Upper-case country_code ('sg' → 'SG') before validation; other values pass through."""
-    if isinstance(source, dict) and isinstance(source.get("country_code"), str):
-        return {**source, "country_code": source["country_code"].strip().upper()}
+    """country_code → upper-case two letters or None (blank). A malformed code raises
+    InvalidCountryCodeError, the same error as an invalid upload form field."""
+    if isinstance(source, dict) and "country_code" in source:
+        return {**source, "country_code": normalise_country_code(source["country_code"])}
     return source
 
 

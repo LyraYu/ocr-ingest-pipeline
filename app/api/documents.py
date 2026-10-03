@@ -8,7 +8,7 @@ from app.api.errors import error_response
 from app.db import document_pages, document_stages, documents, extracted_fields, quality_checks
 from app.db.connection import connect
 from app.pipeline.runner import run_pipeline
-from app.pipeline.stages import normalise_country_code
+from app.ocr import InvalidCountryCodeError, normalise_country_code
 
 router = APIRouter()
 
@@ -26,7 +26,7 @@ def create_document(
         return error_response("file_missing")
     try:
         country = normalise_country_code(country_code)
-    except ValueError:
+    except InvalidCountryCodeError:
         return error_response("invalid_country_code")
 
     result = run_pipeline(file_bytes, file.filename, country, "ingest")

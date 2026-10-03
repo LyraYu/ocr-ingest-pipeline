@@ -7,13 +7,14 @@ re-runnable on an existing document, and records its own document_stages row.
 Each stage body runs in one transaction: on failure its partial writes roll back,
 then the failed stage row and `documents.status = 'failed'` are written and
 `StageFailed` is raised. The quality stage only flags: its own failure is recorded
-on its stage row but never fails the document.
+on its stage row but never fails the document. `fail_document=False` (used by
+reembed) records a failed stage without failing a document that is otherwise fine.
 
 Each stage owns a set of quality_checks names and replaces only those on re-run.
 """
 
 import hashlib
-import re
+import logging
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -22,21 +23,32 @@ from uuid import UUID
 
 import psycopg
 
+from app.chunking import CHUNKING_VERSION, ChunkLine, chunk_pages
 from app.config import DEFAULT_COUNTRY_CODE, get_settings
-from app.db import document_pages, document_stages, documents, extracted_fields, ocr_lines, quality_checks
+from app.db import (
+    chunk_embeddings,
+    chunks,
+    document_pages,
+    document_stages,
+    documents,
+    embedding_models,
+    extracted_fields,
+    ocr_lines,
+    quality_checks,
+)
+from app.embedding import get_embedder
 from app.errors import PipelineInputError
 from app.extraction import UnsupportedDocumentTypeError
 from app.extraction.classify import classify
 from app.extraction.rules import SourceLine, extract
 from app.extraction.validate import validate_field
-from app.ocr import NORMALISER_VERSION, OcrInputError
+from app.ocr import NORMALISER_VERSION, OcrInputError, normalise_country_code
 from app.ocr.envelope import Envelope, parse_json, validate_envelope
 from app.ocr.registry import normalise_envelope
 from app.ocr.schema import NormalisedDocument
 from app.pipeline import storage
 
-COUNTRY_CODE_RE = re.compile(r"^[A-Z]{2}$")
-
+log = logging.getLogger(__name__)
 
 class StageFailed(Exception):
     def __init__(self, stage: str, error_code: str, message: str):
@@ -59,13 +71,15 @@ def _execute_stage(
     document_id: UUID,
     run_id: UUID,
     stage: str,
-    success_status: str,
+    success_status: str | None,
     body: Callable[[], None],
     on_failure: Callable[[Exception], None] | None = None,
     fail_document: bool = True,
+    raise_failure: bool = True,
 ) -> None:
-    """`on_failure(exc)` runs inside the failure transaction (after the body's writes
-    were rolled back), for rows that must record the failure itself."""
+    """`success_status` None keeps the document's status. `on_failure(exc)` runs inside
+    the failure transaction (after the body's writes were rolled back), for rows that
+    must record the failure itself."""
     started_at = datetime.now(UTC)
     t0 = time.perf_counter()
     try:
@@ -88,7 +102,7 @@ def _execute_stage(
                 on_failure(exc)
             if fail_document:
                 documents.mark_failed(conn, document_id, code, message, run_id)
-        if fail_document:
+        if raise_failure:
             raise StageFailed(stage, code, message) from exc
 
 
@@ -101,33 +115,23 @@ def content_hash(file_bytes: bytes) -> tuple[str, str]:
     return f"sha256:{hex_digest}", hex_digest
 
 
-def normalise_country_code(value: str | None) -> str | None:
-    """Upper-cased ISO-3166 alpha-2, None when blank; ValueError when malformed."""
-    if value is None or not value.strip():
-        return None
-    code = value.strip().upper()
-    if not COUNTRY_CODE_RE.match(code):
-        raise ValueError(f"country_code must be two letters, got {value!r}")
-    return code
-
-
 RECEIVE_CHECKS = ("file_json", "envelope_valid", "engine_supported")
 
 
 def receive_checks(error: OcrInputError | None) -> list[dict]:
-    """The three receive-time checks in evaluation order. The failing one is
-    passed=false; checks after it were not evaluated and are also passed=false,
-    marked `evaluated: false`, so every document has the full set."""
+    """The receive-time checks that ran, in evaluation order: all three when the
+    file was accepted, else the ones before the failing check plus the failing one
+    (passed=false). A quality_checks row means the check ran."""
     failed_at = RECEIVE_CHECKS.index(error.check) if error else len(RECEIVE_CHECKS)
-    checks = []
-    for i, name in enumerate(RECEIVE_CHECKS):
-        if i < failed_at:
-            details = {"evaluated": True}
-        elif i == failed_at:
-            details = {"evaluated": True, "error_code": error.error_code, "message": str(error)[:500]}
-        else:
-            details = {"evaluated": False, "message": f"not evaluated: {RECEIVE_CHECKS[failed_at]} failed"}
-        checks.append({"check_name": name, "passed": i < failed_at, "severity": "error", "details": details})
+    checks = [
+        {"check_name": name, "passed": True, "severity": "error", "details": {}}
+        for name in RECEIVE_CHECKS[:failed_at]
+    ]
+    if error:
+        checks.append({
+            "check_name": RECEIVE_CHECKS[failed_at], "passed": False, "severity": "error",
+            "details": {"error_code": error.error_code, "message": str(error)[:500]},
+        })
     return checks
 
 
@@ -161,8 +165,8 @@ def _metadata_from_rejected_json(data: object) -> tuple[dict, str | None]:
     source = data.get("source") if isinstance(data.get("source"), dict) else {}
     ocr = data.get("ocr") if isinstance(data.get("ocr"), dict) else {}
     try:
-        country = normalise_country_code(_str_or_none(source.get("country_code")))
-    except ValueError:
+        country = normalise_country_code(source.get("country_code"))
+    except OcrInputError:
         country = None
     return {
         "source_sha256": _str_or_none(source.get("source_sha256")),
@@ -380,9 +384,11 @@ def quality_checks_for(pages: list[dict], fields: list[dict], threshold: float) 
         "details": {"threshold": threshold, "flagged_pages": flagged_pages, "level": "document"},
     })
     for f in fields:
+        # An invalid value is a warning (quarantined); a field the document simply does
+        # not contain is informational only.
         checks.append({
             "check_name": f"field_{f['field_name']}", "passed": f["validation_status"] == "valid",
-            "severity": "warning",
+            "severity": "info" if f["validation_status"] == "missing" else "warning",
             "details": {"validation_status": f["validation_status"], "message": f["validation_message"]},
         })
     return checks
@@ -407,13 +413,115 @@ def stage_quality(conn: psycopg.Connection, document_id: UUID, run_id: UUID) -> 
         )
         quality_checks.replace(conn, document_id, run_id, QUALITY_OWNED_CHECKS, checks)
 
-    _execute_stage(conn, document_id, run_id, "quality", "extracted", body, fail_document=False)
+    _execute_stage(conn, document_id, run_id, "quality", None, body, fail_document=False, raise_failure=False)
 
 
-# Stages after receive, in order. chunk / embed arrive in phase 4.
-POST_RECEIVE_STAGES: tuple[Callable[[psycopg.Connection, UUID, UUID], None], ...] = (
+# --- chunk -------------------------------------------------------------------
+
+
+def stage_chunk(conn: psycopg.Connection, document_id: UUID, run_id: UUID, *, fail_document: bool = True) -> None:
+    """ocr_lines → chunks for CHUNKING_VERSION. Chunks of the current version are
+    reused (re-loading lines deletes pages, which cascades to their chunks)."""
+
+    def body() -> None:
+        if chunks.count_for_document(conn, document_id, CHUNKING_VERSION):
+            return
+        pages: dict[UUID, list[ChunkLine]] = {}
+        for row in ocr_lines.list_for_document(conn, document_id):  # page, then line order
+            pages.setdefault(row["page_id"], []).append(
+                ChunkLine(row["id"], row["text"], (row["x0"], row["y0"], row["x1"], row["y1"]))
+            )
+        rows, index = [], 0
+        for page_id, page_chunks in zip(pages, chunk_pages(list(pages.values()))):
+            for draft in page_chunks:
+                rows.append((index, page_id, draft))
+                index += 1
+        chunks.insert_many(conn, document_id, run_id, CHUNKING_VERSION, rows)
+
+    _execute_stage(conn, document_id, run_id, "chunk", None, body, fail_document=fail_document)
+
+
+# --- embed -------------------------------------------------------------------
+
+
+def ingest_model_name(conn: psycopg.Connection) -> str:
+    """New documents are embedded with the active model (search only reads that one);
+    before any model is active, with EMBEDDING_MODEL from config."""
+    active = embedding_models.get_active(conn)
+    return active["model_name"] if active else get_settings().embedding_model
+
+
+def stage_embed(
+    conn: psycopg.Connection,
+    document_id: UUID,
+    run_id: UUID,
+    model_name: str | None = None,
+    *,
+    precomputed: dict[UUID, list[float]] | None = None,
+    fail_document: bool = True,
+) -> None:
+    """Embed the document's chunks that have no row for this model+version yet.
+    Other models' rows are never touched. Vectors in `precomputed` (chunk id →
+    vector, from a run-level batch) are used instead of re-encoding."""
+
+    def body() -> None:
+        embedder = get_embedder(model_name or ingest_model_name(conn))
+        embedding_models.upsert(conn, embedder.model_name, embedder.model_version, embedder.dimension)
+        if embedder.model_name == get_settings().embedding_model:
+            embedding_models.activate_if_none_active(conn, embedder.model_name)
+        todo = chunks.missing_embeddings(
+            conn, [document_id], CHUNKING_VERSION, embedder.model_name, embedder.model_version
+        )
+        cached = precomputed or {}
+        to_encode = [c for c in todo if c["id"] not in cached]
+        fresh = dict(zip((c["id"] for c in to_encode), embedder.encode([c["text"] for c in to_encode])))
+        chunk_embeddings.insert_many(
+            conn, run_id, embedder.model_name, embedder.model_version, embedder.dimension,
+            [(c["id"], cached.get(c["id"]) or fresh[c["id"]]) for c in todo],
+        )
+
+    _execute_stage(conn, document_id, run_id, "embed", "embedded", body, fail_document=fail_document)
+
+
+def embed_documents(
+    conn: psycopg.Connection,
+    document_ids: list[UUID],
+    run_id: UUID,
+    model_name: str | None = None,
+    *,
+    fail_document: bool = True,
+) -> dict[UUID, str | None]:
+    """stage_embed for many documents with one encode call for all their chunks
+    (CLAUDE.md §7: batch encode all chunk texts of a run in one call).
+    Returns document_id → error_code (None on success)."""
+    precomputed: dict[UUID, list[float]] = {}
+    if document_ids:
+        try:
+            embedder = get_embedder(model_name or ingest_model_name(conn))
+            todo = chunks.missing_embeddings(
+                conn, document_ids, CHUNKING_VERSION, embedder.model_name, embedder.model_version
+            )
+            precomputed = dict(zip((c["id"] for c in todo), embedder.encode([c["text"] for c in todo])))
+        except Exception:
+            # Fall through: each document's stage_embed records the failure on its own row.
+            log.exception("batch embedding failed; falling back to per-document embedding")
+            precomputed = {}
+    results: dict[UUID, str | None] = {}
+    for document_id in document_ids:
+        try:
+            stage_embed(conn, document_id, run_id, model_name, precomputed=precomputed, fail_document=fail_document)
+            results[document_id] = None
+        except StageFailed as exc:
+            results[document_id] = exc.error_code
+    return results
+
+
+# Stages after receive, in order.
+PRE_EMBED_STAGES: tuple[Callable[[psycopg.Connection, UUID, UUID], None], ...] = (
     stage_normalise,
     stage_load,
     stage_extract,
     stage_quality,
+    stage_chunk,
 )
+POST_RECEIVE_STAGES = (*PRE_EMBED_STAGES, stage_embed)

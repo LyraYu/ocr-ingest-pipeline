@@ -5,12 +5,13 @@ Errors carry the API error code they map to (CLAUDE.md §4, §9).
 
 import functools
 import math
+import re
 
 from pydantic import ValidationError
 
 from app.errors import PipelineInputError
 
-NORMALISER_VERSION = "1.0.0"
+NORMALISER_VERSION = "1.1.0"
 
 
 class OcrInputError(PipelineInputError):
@@ -31,10 +32,26 @@ class UnreadableFileError(OcrInputError):
     check = "file_json"
 
 
+class InvalidCountryCodeError(OcrInputError):
+    """country_code (form field or envelope source.country_code) is not two letters."""
+
+    error_code = "invalid_country_code"
+
+
 class UnsupportedFormatError(OcrInputError):
     """JSON that is not a supported OCR export (envelope, engine or raw_output shape)."""
 
     error_code = "unsupported_ocr_format"
+
+
+def normalise_country_code(value: object) -> str | None:
+    """Upper-cased two-letter code; None when absent or blank; else InvalidCountryCodeError.
+    Used for both the upload form field and the envelope's source.country_code."""
+    if value is None or (isinstance(value, str) and not value.strip()):
+        return None
+    if isinstance(value, str) and re.fullmatch(r"[A-Za-z]{2}", value.strip()):
+        return value.strip().upper()
+    raise InvalidCountryCodeError("country_code must be two letters", check="envelope_valid")
 
 
 def as_number(value, what: str) -> float:

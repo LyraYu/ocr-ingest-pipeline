@@ -1,9 +1,14 @@
-# sentence-transformers is added in phase 4 (embeddings).
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
 typer==0.15.1
 pydantic==2.10.4
 psycopg[binary]==3.2.3
 python-multipart==0.0.20
+# Embeddings. In Docker, CPU-only torch is installed first (see Dockerfile);
+# locally `pip install -r requirements.txt` pulls the default torch build.
+sentence-transformers==3.3.1
+transformers==4.47.1
+huggingface-hub==0.27.0
+# Tests
 pytest==8.3.4
 httpx==0.28.1

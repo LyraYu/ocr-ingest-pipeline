@@ -2,12 +2,23 @@ FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1
+    PIP_NO_CACHE_DIR=1 \
+    HF_HOME=/opt/hf-cache \
+    TOKENIZERS_PARALLELISM=false
 
 WORKDIR /app
 
+# CPU-only torch (the default wheel bundles CUDA, ~2 GB larger).
+RUN pip install --index-url https://download.pytorch.org/whl/cpu torch==2.5.1
+
 COPY requirements.txt .
 RUN pip install -r requirements.txt
+
+# Bake the default embedding model into the image so `docker compose up` needs no
+# network at run time. Other models (e.g. BAAI/bge-small-en-v1.5) download on demand.
+COPY app/embedding.py /tmp/embedding.py
+RUN python -c "import sys; sys.path.insert(0, '/tmp'); from embedding import resolve_model; \
+print(resolve_model('sentence-transformers/all-MiniLM-L6-v2'))"
 
 COPY . .
 

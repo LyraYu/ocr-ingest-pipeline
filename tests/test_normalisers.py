@@ -2,7 +2,7 @@ import copy
 
 import pytest
 
-from app.ocr import UnsupportedFormatError
+from app.ocr import NORMALISER_VERSION, UnsupportedFormatError
 from app.ocr.registry import ENGINES, normalise_envelope
 from app.ocr.envelope import validate_envelope
 from app.ocr.schema import NormalisedPage
@@ -129,7 +129,7 @@ def test_malformed_raw_output_is_named_error(samples_by_engine, engine):
 def test_normalise_envelope_builds_document(samples_by_engine, engine):
     envelope = validate_envelope(samples_by_engine[engine])
     doc = normalise_envelope(envelope)
-    assert doc.normaliser_version == "1.0.0"
+    assert doc.normaliser_version == NORMALISER_VERSION == "1.1.0"
     assert doc.engine.name == engine
     assert doc.source.country_code == "SG"
     assert doc.pages

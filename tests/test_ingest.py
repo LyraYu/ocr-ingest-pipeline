@@ -7,6 +7,7 @@ import pytest
 from typer.testing import CliRunner
 
 from app.cli import app as cli_app
+from app.ocr import NORMALISER_VERSION
 from app.pipeline import storage
 from app.pipeline.runner import run_pipeline, start_run
 from app.pipeline.stages import stage_load
@@ -41,21 +42,25 @@ def test_idempotent_ingest(db_conn, client, sample_bytes_by_engine):
     assert a["document_id"] == b["document_id"]
     assert a["content_hash"] == b["content_hash"]
     assert a["content_hash"].startswith("sha256:")
-    assert a["status"] == b["status"] == "extracted"
+    assert a["status"] == b["status"] == "embedded"
     assert a["pages"] == b["pages"] == 1
     assert a["document_type"] == b["document_type"] == "medical_certificate"
-    assert a["chunks"] == 0 and a["quality_flags"] == [] and b["quality_flags"] == []
+    assert a["chunks"] == b["chunks"] > 0 and a["quality_flags"] == [] and b["quality_flags"] == []
     assert set(a["timings_ms"]) == {"normalise", "load", "embed"}
     assert a["timings_ms"]["normalise"] >= 0 and a["timings_ms"]["load"] >= 0
-    assert a["timings_ms"]["embed"] is None
+    assert a["timings_ms"]["embed"] >= 0
 
     doc_id = a["document_id"]
     assert count(db_conn, "select count(*) from documents where content_hash = %s", a["content_hash"]) == 1
     assert count(db_conn, "select upload_filename = 'first_name.json' from documents where id = %s", doc_id)
     assert count(db_conn, "select count(*) from document_pages where document_id = %s", doc_id) == 1
     assert count(db_conn, "select count(*) from ocr_lines where document_id = %s", doc_id) == 31
-    assert count(db_conn, "select count(*) from document_stages where document_id = %s", doc_id) == 5
+    assert count(db_conn, "select count(*) from document_stages where document_id = %s", doc_id) == 7
     assert count(db_conn, "select count(*) from extracted_fields where document_id = %s", doc_id) == 10
+    chunk_count = count(db_conn, "select count(*) from chunks where document_id = %s", doc_id)
+    assert chunk_count == a["chunks"]
+    assert count(db_conn, "select count(*) from chunk_embeddings e join chunks c on c.id = e.chunk_id"
+                          " where c.document_id = %s", doc_id) == chunk_count
     # The duplicate created no pipeline run either.
     assert count(db_conn, "select count(distinct run_id) from document_stages where document_id = %s", doc_id) == 1
 
@@ -113,11 +118,11 @@ def test_get_document_returns_stages_with_durations(db_conn, client, sample_byte
     assert response.status_code == 200
     body = response.json()
     assert body["id"] == doc_id
-    assert body["status"] == "extracted"
+    assert body["status"] == "embedded"
     assert body["document_type"] == "referral_letter"
     assert body["ocr_engine"] == "azure-document-intelligence"
-    assert body["normalised_storage_uri"].endswith(".v1.0.0.json")
-    assert [s["stage"] for s in body["stages"]] == ["receive", "normalise", "load", "extract", "quality"]
+    assert body["normalised_storage_uri"].endswith(f".v{NORMALISER_VERSION}.json")
+    assert [s["stage"] for s in body["stages"]] == ["receive", "normalise", "load", "extract", "quality", "chunk", "embed"]
     for stage in body["stages"]:
         assert stage["status"] == "succeeded"
         assert isinstance(stage["duration_ms"], int) and stage["duration_ms"] >= 0
@@ -163,7 +168,7 @@ def test_invalid_country_code_form_field(db_conn, client, sample_bytes_by_engine
 
 def test_load_reads_normalised_zone_not_raw(db_conn, sample_bytes_by_engine):
     result = run_pipeline(variant(sample_bytes_by_engine["tesseract"], "reload"), "reload.json", conn=db_conn)
-    assert result.status == "extracted"
+    assert result.status == "embedded"
     raw_uri, = db_conn.execute("select raw_storage_uri from documents where id = %s", (result.document_id,)).fetchone()
     storage.uri_to_path(raw_uri).unlink()
 
@@ -218,3 +223,38 @@ def test_cli_ingest_folder(db_conn, tmp_path, sample_bytes_by_engine, samples_by
     assert status == "partial"
     assert stats == {"processed": 3, "duplicate": 1, "failed": 2}
     assert count(db_conn, "select count(*) from documents where latest_run_id = %s", run_id) == 5
+
+
+@pytest.mark.parametrize("bad", ["Singapore", "S", "12", 65])
+def test_invalid_envelope_country_code(db_conn, client, sample_bytes_by_engine, bad):
+    """Same error as the form field; the file is still kept (raw zone + failed row)."""
+    data = json.loads(sample_bytes_by_engine["tesseract"])
+    data["source"]["country_code"] = bad
+    payload = json.dumps(data).encode()
+
+    response = upload(client, payload, f"bad-country-{bad}.json")
+
+    assert response.status_code == 422
+    assert response.json() == {"error": "invalid_country_code"}
+    status, error_code, raw_uri, country = db_conn.execute(
+        "select status, error_code, raw_storage_uri, country_code from documents where upload_filename = %s",
+        (f"bad-country-{bad}.json",),
+    ).fetchone()
+    assert (status, error_code, country) == ("failed", "invalid_country_code", "SG")
+    assert storage.uri_to_path(raw_uri).read_bytes() == payload
+    failed = db_conn.execute(
+        "select check_name from quality_checks q join documents d on d.id = q.document_id"
+        " where d.upload_filename = %s and not q.passed",
+        (f"bad-country-{bad}.json",),
+    ).fetchall()
+    assert failed == [("envelope_valid",)]
+
+
+def test_blank_envelope_country_code_falls_back_to_default(db_conn, client, sample_bytes_by_engine):
+    data = json.loads(sample_bytes_by_engine["tesseract"])
+    data["source"]["country_code"] = "  "
+    data["test_variant"] = "blank-country"
+    response = upload(client, json.dumps(data).encode())
+    assert response.status_code == 201
+    row = db_conn.execute("select country_code from documents where id = %s", (response.json()["document_id"],))
+    assert row.fetchone()[0] == "SG"
