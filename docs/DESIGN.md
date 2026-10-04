@@ -18,7 +18,7 @@ tied to the three sample files.
 
 - Python 3.12, `uv` or `pip` with `requirements.txt`.
 - FastAPI + uvicorn (API), Typer (CLI), Pydantic v2 (all JSON schemas).
-- PostgreSQL 16 with pgvector: docker image `pgvector/pgvector:pg16`.
+- PostgreSQL 16 with pgvector: docker image `pgvector/pgvector:0.8.0-pg16`.
 - DB access: `psycopg[binary]` v3 and plain SQL (no ORM).
 - Migrations are numbered SQL files in `migrations/`. `app/db/migrate.py` applies them
   and records each one in the table `schema_migrations(filename, applied_at)`.
