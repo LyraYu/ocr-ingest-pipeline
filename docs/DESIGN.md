@@ -6,30 +6,32 @@ or contradictory, ask before inventing.
 Assignment: Fullerton Health take-home (Data Engineer). Three OCR engine exports
 (AWS Textract, Tesseract, Azure Document Intelligence) → normalised OCR JSON →
 PostgreSQL relational tables → chunks + embeddings (pgvector) → search API.
-Hidden test set: more documents of the same 3 types in any of the 3 engine
-formats, plus duplicates, malformed files and unsupported formats. Nothing may
-be hard-coded to the three sample files.
+A hidden test set has more documents of the same 3 types, in any of the 3 engine
+formats. It also has duplicates, malformed files and unsupported formats.
+Nothing may be hard-coded to the three sample files.
+
+How to run, use and extend the system: [README](../README.md).
 
 ## 1. Stack (fixed)
 
-- Python 3.12, `uv` or `pip` with `requirements.txt`
-- FastAPI + uvicorn (API), Typer (CLI), Pydantic v2 (all JSON schemas)
-- PostgreSQL 16 with pgvector: docker image `pgvector/pgvector:pg16`
-- DB access: `psycopg[binary]` v3 + plain SQL (no ORM). Migrations = numbered SQL
-  files in `migrations/` applied by `app/db/migrate.py`, which records applied
-  files in table `schema_migrations(filename, applied_at)`.
-- Embeddings: `sentence-transformers`, default model `sentence-transformers/all-MiniLM-L6-v2`
+- Python 3.12, `uv` or `pip` with `requirements.txt`.
+- FastAPI + uvicorn (API), Typer (CLI), Pydantic v2 (all JSON schemas).
+- PostgreSQL 16 with pgvector: docker image `pgvector/pgvector:pg16`.
+- DB access: `psycopg[binary]` v3 and plain SQL (no ORM).
+- Migrations are numbered SQL files in `migrations/`. `app/db/migrate.py` applies them
+  and records each one in the table `schema_migrations(filename, applied_at)`.
+- Embeddings: `sentence-transformers`. Default model `sentence-transformers/all-MiniLM-L6-v2`
   (384 dims). Second model for the re-embed demo: `BAAI/bge-small-en-v1.5` (384 dims).
-- Raw zone / OCR zone: local disk under `./data/` (a docker volume). No S3.
-- Tests: pytest. Tests run against the real Postgres from docker compose
-  (`DATABASE_URL` env), each test module truncates tables in a fixture.
+- Raw zone and OCR zone: local disk under `./data/` (a docker volume). No S3.
+- Tests: pytest, against the real Postgres from docker compose (`DATABASE_URL` env).
+  Each test module truncates the tables in a fixture.
 - Logging: stdlib `logging` with a PII-masking filter (see §8).
 
 ## 2. Repository layout
 
 ```
 .
-├── CLAUDE.md                  # this file
+├── docs/DESIGN.md             # this file
 ├── README.md
 ├── docker-compose.yml         # db + api
 ├── Dockerfile                 # api image
@@ -66,14 +68,18 @@ be hard-coded to the three sample files.
 
 ## 3. Relational schema (migration 001)
 
-Conventions: all ids are `uuid` (`gen_random_uuid()`), all timestamps `timestamptz`
-default `now()`. Every derived row carries `run_id` → `pipeline_runs.id` (lineage).
-All bounding boxes are `[x0, y0, x1, y1]` as fractions of page width/height in
-[0, 1], origin top-left. All confidences are in [0, 1].
+Conventions:
+- All ids are `uuid` (`gen_random_uuid()`). All timestamps are `timestamptz`, default `now()`.
+- Every derived row has `run_id` → `pipeline_runs.id` (lineage).
+- All bounding boxes are `[x0, y0, x1, y1]`, as fractions of page width/height in [0, 1].
+  The origin is the top-left corner.
+- All confidences are in [0, 1].
+
+A one-table-per-row summary is in the [README](../README.md#3-data-model-summary).
+The diagram is [`erd.mmd`](erd.mmd).
 
 ### 3.1 pipeline_runs
-One row per invocation of the pipeline (an API upload, one CLI ingest batch, one
-reembed batch).
+One row per pipeline run: an API upload, one CLI ingest batch, or one reembed batch.
 
 | column | type | notes |
 |---|---|---|
@@ -94,7 +100,7 @@ One row per unique uploaded export file. `content_hash` is the idempotency key.
 |---|---|---|
 | id | uuid pk | |
 | content_hash | text unique not null | `sha256:<hex>` of the uploaded bytes |
-| source_sha256 | text null, indexed | from envelope `source.source_sha256`; hash of the original scan. NOT unique: a re-OCR of the same scan is a new document row sharing this value. Used to group "versions of the same scan" (design question 3). |
+| source_sha256 | text null, indexed | From envelope `source.source_sha256`: the hash of the original scan. NOT unique: a re-OCR of the same scan is a new document row with the same value. Used to group "versions of the same scan" (design question 3). |
 | upload_filename | text | filename as uploaded |
 | source_filename | text null | envelope `source.original_filename` (the scan) |
 | source_mime_type | text null | envelope `source.mime_type` |
@@ -102,7 +108,7 @@ One row per unique uploaded export file. `content_hash` is the idempotency key.
 | raw_storage_uri | text | `file://data/raw/<hex>.json` |
 | normalised_storage_uri | text null | `file://data/normalised/<hex>.v<normaliser_version>.json` |
 | document_type | text null | check in (`referral_letter`,`medical_certificate`,`receipt`) |
-| country_code | char(2) not null | resolution: form field → envelope → `SG` |
+| country_code | char(2) not null | order: form field → envelope → `SG` (see §12) |
 | ocr_engine | text null | envelope `ocr.engine` |
 | ocr_engine_version | text null | |
 | ocr_processed_at | timestamptz null | |
@@ -114,8 +120,8 @@ One row per unique uploaded export file. `content_hash` is the idempotency key.
 | latest_run_id | uuid → pipeline_runs | |
 
 ### 3.3 document_stages
-Per-document, per-stage record. This is what `GET /documents/{id}` returns as
-"pipeline status per stage" and where `timings_ms` comes from.
+One row per document and stage. `GET /documents/{id}` returns these as the
+pipeline status per stage. `timings_ms` comes from here.
 
 | column | type | notes |
 |---|---|---|
@@ -137,10 +143,10 @@ Unique `(document_id, stage, run_id)`.
 | id | uuid pk | |
 | document_id | uuid → documents cascade | |
 | page_number | integer | 1-based |
-| width, height | numeric null | in `size_unit`; null when engine gives none |
+| width, height | numeric null | in `size_unit`; null when the engine gives none |
 | size_unit | text null | `px` / `inch` / null |
 | size_reason | text null | why width/height are null (Textract) |
-| ocr_engine, ocr_engine_version | text | copied from document for direct querying |
+| ocr_engine, ocr_engine_version | text | copied from the document, for direct querying |
 | mean_confidence | numeric null | mean of line confidences, [0,1] |
 | line_count | integer | |
 | run_id | uuid → pipeline_runs | |
@@ -154,7 +160,7 @@ Unique `(document_id, page_number)`.
 | id | uuid pk | |
 | document_id | uuid → documents cascade | |
 | page_id | uuid → document_pages cascade | |
-| line_index | integer | 0-based, reading order as produced by the engine |
+| line_index | integer | 0-based, in the engine's reading order |
 | text | text | |
 | bbox_x0, bbox_y0, bbox_x1, bbox_y1 | numeric | normalised [0,1] |
 | confidence | numeric null | [0,1] |
@@ -164,19 +170,18 @@ Unique `(document_id, page_number)`.
 Unique `(page_id, line_index)`.
 
 ### 3.6 extracted_fields
-Shape: key–value, one row per (document, field). Reason: 3 document types with
-20 fields total and more types expected; a key-value table keeps the schema
-stable when a type is added (only `extraction/rules.py` changes), and every field
-carries its own validation status, which typed columns cannot do cleanly.
-`normalised_value` is jsonb so it can hold int / string / bool / null with one
-column.
+Shape: key–value, one row per (document, field). There are 3 document types with 20
+fields in total, and more types are expected. A key-value table keeps the schema the
+same when a type is added: only `extraction/rules.py` changes. Each field also keeps
+its own validation status, which typed columns cannot do cleanly. `normalised_value`
+is jsonb, so one column can hold an int, string, bool or null.
 
 | column | type | notes |
 |---|---|---|
 | id | uuid pk | |
 | document_id | uuid → documents cascade | |
-| field_name | text | from appendix 8.1 |
-| raw_value | text null | the OCR substring matched |
+| field_name | text | from appendix 8.1 (§6.1) |
+| raw_value | text null | the OCR substring that matched |
 | normalised_value | jsonb null | e.g. `"08/03/2026"`, `12500`, `true` |
 | value_type | text | `date` / `amount` / `int` / `bool` / `text` / `datetime` |
 | validation_status | text | `valid` / `invalid` / `missing` |
@@ -185,7 +190,7 @@ column.
 | run_id | uuid → pipeline_runs | |
 
 Unique `(document_id, field_name)`. Every field in the appendix list for the
-document's type gets a row, `missing` when not found.
+document's type gets a row. It is `missing` when not found.
 
 ### 3.7 quality_checks
 
@@ -196,9 +201,12 @@ document's type gets a row, `missing` when not found.
 | page_id | uuid null → document_pages cascade | null for document-level checks |
 | check_name | text | `file_json`, `envelope_valid`, `engine_supported`, `document_type_supported`, `page_confidence`, `field_<name>` |
 | passed | boolean | |
-| severity | text | `error` (blocks pipeline) / `warning` (flag only) |
+| severity | text | `error` (blocks the pipeline) / `warning` (flag only); `info` added later (§12) |
 | details | jsonb | threshold, observed value, message |
 | run_id | uuid → pipeline_runs | |
+
+The full list of checks, including those added later, is in the
+[README](../README.md#quality-checks).
 
 ### 3.8 chunks
 
@@ -207,10 +215,10 @@ document's type gets a row, `missing` when not found.
 | id | uuid pk | |
 | document_id | uuid → documents cascade | |
 | page_id | uuid → document_pages cascade | chunks never cross pages |
-| chunk_index | integer | 0-based within document |
+| chunk_index | integer | 0-based within the document |
 | chunking_version | text | `app.chunking.CHUNKING_VERSION` |
 | text | text | |
-| bbox_x0, bbox_y0, bbox_x1, bbox_y1 | numeric | union of source line bboxes |
+| bbox_x0, bbox_y0, bbox_x1, bbox_y1 | numeric | union of the source line bboxes |
 | source_line_ids | uuid[] | ordered |
 | char_count | integer | |
 | run_id | uuid → pipeline_runs | |
@@ -218,7 +226,7 @@ document's type gets a row, `missing` when not found.
 Unique `(document_id, chunking_version, chunk_index)`.
 
 ### 3.9 chunk_embeddings
-Embeddings live in their own table so two models can coexist for the same chunk.
+Embeddings have their own table, so two models' vectors can exist for the same chunk.
 
 | column | type | notes |
 |---|---|---|
@@ -232,10 +240,10 @@ Embeddings live in their own table so two models can coexist for the same chunk.
 | run_id | uuid → pipeline_runs | |
 
 Unique `(chunk_id, model_name, model_version)`.
-Index: `create index ... using hnsw (embedding vector_cosine_ops)`. Distance metric:
-cosine. Search score = `1 - cosine_distance`.
-Known limitation (document in README): the column is fixed at 384 dims; a model
-with another dimension needs a new migration. Both chosen models are 384.
+Index: `create index ... using hnsw (embedding vector_cosine_ops)`.
+Distance metric: cosine. Search score = `1 - cosine_distance`.
+The column is fixed at 384 dims, so a model with another dimension needs a new migration.
+Both chosen models are 384. This is listed in the README's Known limitations.
 
 ### 3.10 embedding_models
 
@@ -247,23 +255,24 @@ with another dimension needs a new migration. Both chosen models are 384.
 | is_active | boolean | exactly one row true; search uses the active model |
 | created_at | timestamptz | |
 
-`reembed --model X` inserts/updates the row, embeds everything, then flips
+`reembed --model X` inserts or updates the row, embeds everything, then flips
 `is_active`. Until the flip, search keeps using the old model's rows.
 
 ### 3.11 View `v_quarantine`
-Documents where `status = 'failed'` OR any `quality_checks.passed = false`,
-with error_code, failed check names and the document's country/type.
+Documents where `status = 'failed'`, or where any quality check did not pass.
+Shows the error_code, the failed check names and the document's country and type.
+Checks of severity `info` do not count (§12).
 
 ### 3.12 View `v_documents_deidentified` (PII control #2)
-`documents` joined to `extracted_fields`, exposing document metadata and
-non-identifying fields only (amounts, dates, mc_days, provider_name); rows for
-`claimant_name`, `claimant_address`, `claimant_date_of_birth` are excluded.
+`documents` joined to `extracted_fields`. It shows document metadata and the
+non-identifying fields only (amounts, dates, mc_days, provider_name). Rows for
+`claimant_name`, `claimant_address` and `claimant_date_of_birth` are left out.
 
 ## 4. Normalised OCR JSON (Pydantic models in `app/ocr/schema.py`)
 
 ```json
 {
-  "normaliser_version": "1.0.0",
+  "normaliser_version": "1.1.0",
   "normalised_at": "2026-10-01T02:00:00Z",
   "coordinate_system": "fraction_of_page_0_1_origin_top_left",
   "confidence_scale": "0_1",
@@ -284,7 +293,8 @@ non-identifying fields only (amounts, dates, mc_days, provider_name); rows for
           "text": "MEDICAL CERTIFICATE",
           "bbox": [0.31, 0.05, 0.69, 0.08],
           "confidence": 0.97,
-          "confidence_source": "mean_of_words"
+          "confidence_source": "mean_of_words",
+          "bbox_clamped": false
         }
       ]
     }
@@ -292,44 +302,50 @@ non-identifying fields only (amounts, dates, mc_days, provider_name); rows for
 }
 ```
 
-Rules per engine (`app/ocr/<engine>.py`, each a pure function
-`normalise(raw_output: dict) -> list[NormalisedPage]`; raise
-`UnsupportedFormatError` when `raw_output` does not have that engine's shape):
+Rules per engine. Each engine has a module `app/ocr/<engine>.py` with a pure function
+`normalise(raw_output: dict) -> list[NormalisedPage]`. It raises
+`UnsupportedFormatError` when `raw_output` does not have that engine's shape.
 
-- **aws-textract** — iterate `Blocks` with `BlockType == "LINE"`, group by `Page`.
-  bbox from `Geometry.BoundingBox` (Left, Top, Width, Height, already 0–1) →
-  `[Left, Top, Left+Width, Top+Height]`. confidence = `Confidence / 100`,
-  `confidence_source = "engine_line"`. width/height = null, size_unit = null,
-  `size_reason = "aws-textract reports only ratio coordinates, no absolute page size"`.
-  Shape check: `Blocks` is a list and contains at least one block with `BlockType == "PAGE"`.
-- **tesseract** — `raw_output` is the `image_to_data` dict of parallel arrays
-  (`level`, `page_num`, `block_num`, `par_num`, `line_num`, `word_num`, `left`,
-  `top`, `width`, `height`, `conf`, `text`). Page size from the `level == 1` row
-  (`width`, `height`, unit px). A line = all `level == 5` rows sharing
-  `(page_num, block_num, par_num, line_num)` with non-empty `text`; text joined
-  with single spaces; bbox = union of word boxes divided by page width/height;
-  confidence = mean of word `conf` values, ignoring `-1`, divided by 100;
-  `confidence_source = "mean_of_words"`; null if no words have conf.
-  Shape check: the dict has the keys `level`, `text`, `conf`, `left`, `top`,
-  `width`, `height` and they are equal-length lists.
-- **azure-document-intelligence** — `raw_output.analyzeResult.pages[]`. Page
-  width/height/unit given (`unit` is `inch`). For each `lines[]` entry: bbox from
-  the 8-number `polygon` → `[min x, min y, max x, max y]` divided by page
-  width/height. Line confidence = mean of the confidences of the `words[]` whose
-  `span.offset` (NOTE: a word has a single `span` object; a line has a `spans`
-  list) falls inside the line's `spans[0]` range
-  (`line.offset <= word.span.offset < line.offset + line.length`);
-  `confidence_source = "mean_of_words"`.
-  Shape check: `analyzeResult.pages` exists and is a list; `analyzeResult.content` is a string.
+- **aws-textract**
+  - Take the `Blocks` with `BlockType == "LINE"` and group them by `Page`.
+  - bbox from `Geometry.BoundingBox` (Left, Top, Width, Height, already 0–1) →
+    `[Left, Top, Left+Width, Top+Height]`.
+  - confidence = `Confidence / 100`, `confidence_source = "engine_line"`.
+  - width/height = null, size_unit = null,
+    `size_reason = "aws-textract reports only ratio coordinates, no absolute page size"`.
+  - Shape check: `Blocks` is a list with at least one block where `BlockType == "PAGE"`.
+- **tesseract**
+  - `raw_output` is the `image_to_data` dict of parallel arrays (`level`, `page_num`,
+    `block_num`, `par_num`, `line_num`, `word_num`, `left`, `top`, `width`, `height`,
+    `conf`, `text`).
+  - Page size comes from the `level == 1` row (`width`, `height`, unit px).
+  - A line is all `level == 5` rows with the same `(page_num, block_num, par_num, line_num)`
+    and non-empty `text`. The words are joined with single spaces.
+  - bbox = union of the word boxes, divided by page width/height.
+  - confidence = mean of the word `conf` values, ignoring `-1`, divided by 100.
+    `confidence_source = "mean_of_words"`. It is null if no word has a confidence.
+  - Shape check: the dict has the keys `level`, `text`, `conf`, `left`, `top`, `width`,
+    `height`, and they are lists of equal length.
+- **azure-document-intelligence**
+  - Read `raw_output.analyzeResult.pages[]`. Page width, height and unit are given
+    (`unit` is `inch`).
+  - For each `lines[]` entry, take the bbox from the 8-number `polygon`:
+    `[min x, min y, max x, max y]`, divided by page width/height.
+  - Line confidence = mean confidence of the `words[]` whose `span.offset` falls inside
+    the line's `spans[0]` range (`line.offset <= word.span.offset < line.offset + line.length`).
+    Note: a word has a single `span` object; a line has a `spans` list.
+    `confidence_source = "mean_of_words"`.
+  - Shape check: `analyzeResult.pages` exists and is a list; `analyzeResult.content` is a string.
 
-Envelope validation (`app/ocr/envelope.py`): required keys `source`, `ocr.engine`,
-`raw_output`; `ocr.engine` must be one of the three names; `ocr.engine_version`
-and `ocr.processed_at` copied through when present. A file that is not JSON →
-`unreadable_file`. JSON without the envelope keys, an unknown engine name, or a
-raw_output that fails the declared engine's shape check → `unsupported_ocr_format`.
+Envelope validation (`app/ocr/envelope.py`):
+- Required keys: `source`, `ocr.engine`, `raw_output`. `ocr.engine` must be one of the
+  three names. `ocr.engine_version` and `ocr.processed_at` are copied when present.
+- A file that is not JSON → `unreadable_file`.
+- JSON without the envelope keys, an unknown engine name, or a raw_output that fails
+  the declared engine's shape check → `unsupported_ocr_format`.
 
-The normalised JSON is written to `data/normalised/<hex>.v<version>.json` and its
-URI stored on the document. `load` reads from this file, never from raw again.
+The normalised JSON is written to `data/normalised/<hex>.v<version>.json`, and its
+URI is stored on the document. `load` reads this file and never reads raw again.
 
 ## 5. Document status state machine
 
@@ -337,7 +353,7 @@ URI stored on the document. `load` reads from this file, never from raw again.
 
 | stage | on success status | failure error_code |
 |---|---|---|
-| receive (hash, raw store, file+envelope+engine checks) | received | file_missing / unreadable_file / unsupported_ocr_format |
+| receive (hash, raw store, file+envelope+engine checks) | received | file_missing / unreadable_file / unsupported_ocr_format / invalid_country_code (§12) |
 | normalise | normalised | unsupported_ocr_format |
 | load (pages, lines) | loaded | internal_server_error |
 | extract (classify + fields + validation) | extracted | unsupported_document_type |
@@ -346,96 +362,75 @@ URI stored on the document. `load` reads from this file, never from raw again.
 
 Rules:
 - A file that fails at `receive` after the JSON parsed is still stored in the raw
-  zone and gets a `documents` row with `status = failed` (required by the spec for
-  `unsupported_ocr_format` and `unsupported_document_type`). A file that is not
-  valid JSON at all is stored in raw zone too, with `status = failed`,
-  `error_code = unreadable_file`.
-- Duplicate: same `content_hash` already present → no new rows anywhere, return the
-  existing document with `duplicate: true`, HTTP 200.
-- Every stage is a function `stage_x(conn, document_id, run_id) -> None` that can
-  be called on its own for an existing document (this is what `reembed` relies on).
-- One document's exception never stops the batch: `runner.py` catches, marks the
+  zone. It gets a `documents` row with `status = failed`. The assignment requires
+  this for `unsupported_ocr_format` and `unsupported_document_type`.
+- A file that is not valid JSON at all is also stored in the raw zone, with
+  `status = failed` and `error_code = unreadable_file`.
+- Duplicate: if the same `content_hash` is already present, no new rows are written
+  anywhere. The existing document is returned with `duplicate: true`, HTTP 200.
+- Every stage is a function `stage_x(conn, document_id, run_id) -> None`. It can be
+  called on its own for an existing document; `reembed` relies on this.
+- One document's exception never stops the batch. `runner.py` catches it, marks the
   document failed with `error_code = internal_server_error`, and continues.
 
 ## 6. Extraction (accuracy is not graded; shape is)
 
-- `classify.py`: keyword rules on the concatenated page text, case-insensitive;
-  e.g. "medical certificate" / "unfit for duty" → medical_certificate; "referral"
-  → referral_letter; "receipt" / "tax invoice" / "gst" → receipt. No match →
-  `unsupported_document_type`.
-- `rules.py`: per type, a dict `field_name → (regex, value_type)`. Regex runs over
-  the page text built by joining lines with `\n`; also keep the ocr_line ids
-  whose text overlaps the match. Labels and values are often on separate
-  lines in the samples (`Patient Name:` on one line, the name on the next), so
-  every label regex must allow the value to follow on the next line
-  (`Label:\s*\n?\s*(value)`).
-- `provider_name` is the clinic/provider that issued the document (the first
-  non-empty line of the page is a reasonable default), never a line that
-  merely mentions "Fullerton Health" (the samples all carry a footer such as
-  "Panel clinic of Fullerton Health network"; the hidden set likely does too).
-- `validate.py`: `date` → must parse to `DD/MM/YYYY` (accept common input forms,
-  output that string); `amount` → strip currency symbols, separators, decimals →
-  int (e.g. `S$1,234.50` → `123450`); `int` (mc_days) → non-negative int;
-  `provider_name` → invalid if it contains "fullerton health" (case-insensitive).
-  Missing → `missing`; parse failure → `invalid` with raw_value kept.
+- `classify.py`: case-insensitive keyword rules on the joined page text. For example,
+  "medical certificate" / "unfit for duty" → medical_certificate; "referral" →
+  referral_letter; "receipt" / "tax invoice" / "gst" → receipt.
+  No match → `unsupported_document_type`.
+- `rules.py`: for each type, a dict `field_name → (regex, value_type)`.
+  - The regex runs over the page text, built by joining lines with `\n`.
+  - The ids of the ocr_lines whose text overlaps the match are kept.
+  - In the samples, labels and values are often on separate lines (`Patient Name:` on
+    one line, the name on the next). So every label regex must allow the value on the
+    next line (`Label:\s*\n?\s*(value)`).
+- `provider_name` is the clinic or provider that issued the document. The first
+  non-empty line of the page is a reasonable default. It is never a line that only
+  mentions "Fullerton Health". The samples all have a footer such as "Panel clinic of
+  Fullerton Health network", and the hidden set likely does too.
+- `validate.py`:
+  - `date` must parse to `DD/MM/YYYY`; common input forms are accepted.
+  - `amount`: strip currency symbols, separators and decimals → int
+    (e.g. `S$1,234.50` → `123450`).
+  - `int` (mc_days) must be a non-negative int.
+  - `provider_name` is invalid if it contains "fullerton health" (case-insensitive).
+  - Not found → `missing`. Parse failure → `invalid`, with raw_value kept.
 
 ### 6.1 Reference fields (Appendix 8.1)
 
-```
-referral_letter: claimant_name, provider_name, signature_presence (bool),
-  total_amount_paid, total_approved_amount, total_requested_amount
-medical_certificate: claimant_name, claimant_address, claimant_date_of_birth,
-  diagnosis_name, discharge_date_time, icd_code, provider_name,
-  submission_date_time, date_of_mc, mc_days (int)
-receipt: claimant_name, claimant_address, claimant_date_of_birth,
-  provider_name, tax_amount, total_amount
-```
-
-Formatting rules: dates as DD/MM/YYYY; *_date_time fields keep "DD/MM/YYYY HH:MM";
-amounts as integers with all currency symbols, separators and decimals
-removed (S$93.20 → 9320, SGD 1,200.00 → 120000); provider_name must not
-contain "Fullerton Health"; mc_days is a non-negative integer;
-signature_presence may be a simple heuristic (presence of the word
-"Signature" or "[signed]") or null.
+The field list for each document type, and the formatting rule for each value, are
+in the README: [Fields per document type](../README.md#fields-per-document-type) and
+[Normalised values](../README.md#normalised-values).
+`signature_presence` may be a simple check for the word "Signature" or "[signed]",
+or null.
 
 ## 7. Chunking and embedding
 
-- `CHUNKING_VERSION = "1.0"`. Per page: walk lines in `line_index` order,
-  accumulate until adding the next line would exceed 400 characters, then emit a
-  chunk. Overlap: the last line of a chunk is repeated as the first line of the
-  next. Never cross a page. A page with fewer than 400 chars is one chunk.
-  Reason: these are single-page form-like documents; line boundaries carry
-  meaning (label: value), so chunks are built from whole lines, and a small
-  overlap keeps a label together with a value split across lines.
-- Embedding: batch encode all chunk texts of a run in one call; normalise
-  vectors (sentence-transformers `normalize_embeddings=True`).
-- Quality threshold: page `mean_confidence < 0.80` → `quality_checks` warning
-  `page_confidence`; also a document-level warning if any page is flagged.
-  The threshold is `QUALITY_MIN_PAGE_CONFIDENCE` in config.
+- `CHUNKING_VERSION = "1.0"`. For each page, walk the lines in `line_index` order.
+  Add lines until the next one would take the chunk past 400 characters; then emit
+  the chunk.
+- Overlap: the last line of a chunk is repeated as the first line of the next.
+- A chunk never crosses a page. A page with fewer than 400 characters is one chunk.
+  A single line longer than 400 characters becomes its own chunk.
+- Reason: these are single-page, form-like documents. Line boundaries carry meaning
+  (label: value), so chunks are built from whole lines. The small overlap keeps a
+  label together with a value on the next line.
+- Embedding: encode all chunk texts of a run in one call. Normalise the vectors
+  (sentence-transformers `normalize_embeddings=True`).
+- Page confidence threshold: `QUALITY_MIN_PAGE_CONFIDENCE` in config (0.80). The checks
+  it drives are in the [README](../README.md#quality-checks).
 
 ## 8. PII control in code
 
-`app/security/pii.py`: a `logging.Filter` that masks NRIC/FIN-like ids
-(`[STFG]\d{7}[A-Z]`), Vietnamese/Philippine id-like digit runs (9–12 digits),
-dates of birth and any value tagged as a claimant field before it reaches a log
-record. Applied to the root logger in `main.py` and `cli.py`. Plus view
-`v_documents_deidentified` (§3.12). Everything else is discussed in the report.
+Two controls: the log masking filter in `app/security/pii.py`, and the view
+`v_documents_deidentified` (§3.12). What they cover is in the
+[README](../README.md#9-pii-controls). Everything else is discussed in the report.
 
-## 9. API and CLI contract (verbatim field names from the assignment)
+## 9. API and CLI contract
 
-- `POST /documents` multipart `file`, optional `country_code` → 201 (new) / 200
-  (duplicate) with `{document_id, content_hash, duplicate, document_type, status,
-  pages, chunks, quality_flags, timings_ms{normalise, load, embed}}`.
-  Errors: 400 `file_missing`, 422 `unreadable_file` / `unsupported_ocr_format` /
-  `unsupported_document_type`, 500 `internal_server_error`. Body `{"error": "<code>"}`.
-- `GET /documents/{id}` → document metadata, `stages` (from document_stages),
-  `quality_checks`, `extracted_fields`, `pages`. 404 `not_found`.
-- `POST /search` `{query, top_k, filters{document_type?, country_code?}}` →
-  `{results:[{chunk_id, document_id, document_type, page, score, text, bbox,
-  embedding_model}]}` using the active model; only `chunk_embeddings` rows of
-  that model are searched.
-- CLI: `python -m app.cli ingest <folder>` (prints processed / duplicate /
-  failed), `python -m app.cli reembed --model <name>`, `python -m app.cli migrate`.
+The field names are verbatim from the assignment. Requests, responses, error codes and
+CLI commands are in the [README](../README.md#2-sample-curl-commands-and-cli-usage).
 
 ## 10. Tests (minimum)
 
@@ -450,3 +445,20 @@ record. Applied to the root logger in `main.py` and `cli.py`. Plus view
    document_type filter → top result belongs to a document of that type.
 5. `test_rejections`: non-JSON bytes → 422 unreadable_file; valid JSON with
    unknown engine → 422 unsupported_ocr_format and a failed documents row exists.
+
+## 12. Decisions made during implementation
+
+- **Amounts in the smallest currency unit.** §6 and the field rules gave conflicting
+  examples (`S$1,234.50` → `1234` vs `S$93.20` → `9320`). Amounts are now integers in
+  the smallest unit (`S$45` → `4500`; VND unscaled); see the README's Amounts table.
+- **Country codes.** A malformed country code in the form field, or in the envelope
+  with no valid form value, is rejected with 422 `invalid_country_code`. With a valid
+  form value, the upload is accepted and gets an `envelope_country_code_invalid` warning.
+- **Severity `info` for missing fields.** Quarantining every document with a missing
+  field flagged too much. `field_<name>` is now `warning` when invalid and `info` when
+  missing; only `error` and `warning` count for quarantine.
+- **Normaliser version 1.1.0.** Lines gained `bbox_clamped`, set when a coordinate is
+  clamped into [0, 1]. Since the normalised JSON changed, the version moved from 1.0.0
+  to 1.1.0.
+- **Day-first dates.** Numeric dates are read as DD/MM/YYYY, as written in SG, MY and
+  VN. Philippine month-first dates can be misread; this is listed in the README's Known limitations.
