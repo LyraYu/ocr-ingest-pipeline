@@ -1,6 +1,6 @@
 services:
   db:
-    image: pgvector/pgvector:pg16
+    image: pgvector/pgvector:0.8.0-pg16  # pinned: search needs hnsw.iterative_scan (pgvector >= 0.8.0)
     environment:
       POSTGRES_DB: docs
       POSTGRES_USER: docs
