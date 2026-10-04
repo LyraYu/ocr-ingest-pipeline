@@ -10,3 +10,4 @@ CODE_VERSION
 !.git/HEAD
 !.git/refs
 !.git/packed-refs
+*.tar.gz

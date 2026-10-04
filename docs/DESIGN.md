@@ -1,16 +1,18 @@
 # Design notes
 
-This file is the source of truth for the implementation. If something is missing
-or contradictory, ask before inventing.
+This document explains how the pipeline is built and why. It covers the storage
+layers, the database schema, the normalised OCR format, the pipeline stages, and the
+reasons behind each choice. It was written before the code. Decisions that changed
+during implementation are listed in §11. How to run, use and extend the system is in
+the [README](../README.md).
 
-Assignment: Fullerton Health take-home (Data Engineer). Three OCR engine exports
-(AWS Textract, Tesseract, Azure Document Intelligence) → normalised OCR JSON →
-PostgreSQL relational tables → chunks + embeddings (pgvector) → search API.
-A hidden test set has more documents of the same 3 types, in any of the 3 engine
-formats. It also has duplicates, malformed files and unsupported formats.
-Nothing may be hard-coded to the three sample files.
-
-How to run, use and extend the system: [README](../README.md).
+The pipeline takes OCR export files from three engines (AWS Textract, Tesseract and
+Azure Document Intelligence). It converts each file into one normalised OCR JSON,
+loads the result into PostgreSQL, splits the text into chunks, embeds them with
+pgvector, and serves semantic search through an API. It handles documents of the
+three supported types from any of the three engines, and rejects duplicates,
+malformed files and unsupported formats with a clear error. Nothing in the code is
+tied to the three sample files.
 
 ## 1. Stack (fixed)
 
@@ -37,11 +39,16 @@ How to run, use and extend the system: [README](../README.md).
 ├── Dockerfile                 # api image
 ├── requirements.txt
 ├── migrations/
-│   └── 001_initial.sql
+│   ├── 001_initial.sql
+│   └── 002_info_severity_and_country_error.sql
+├── docker/postgres-init/      # creates the docs_test database on first start
+├── scripts/generate_docs.py   # regenerates docs/normalised, docs/api, docs/quarantine.txt
+├── docs/                      # diagrams, sample outputs, Postman collection
 ├── samples/                   # the three candidate-pack JSON files (synthetic)
 ├── data/                      # runtime: raw/, normalised/  (gitignored)
 ├── app/
 │   ├── config.py              # env settings (DATABASE_URL, EMBEDDING_MODEL, thresholds)
+│   ├── version.py             # CODE_VERSION (git short sha)
 │   ├── main.py                # FastAPI app
 │   ├── cli.py                 # Typer: ingest, reembed, migrate
 │   ├── api/                   # routers: documents.py, search.py
@@ -55,6 +62,7 @@ How to run, use and extend the system: [README](../README.md).
 │   │   └── azure_di.py
 │   ├── pipeline/
 │   │   ├── stages.py          # receive, normalise, load, extract, quality, chunk, embed
+│   │   ├── storage.py         # raw and OCR zone files (atomic writes)
 │   │   └── runner.py          # run_pipeline(file_bytes, filename, country_code) → result
 │   ├── extraction/
 │   │   ├── classify.py        # document_type from text (keyword rules)
@@ -63,7 +71,7 @@ How to run, use and extend the system: [README](../README.md).
 │   ├── chunking.py
 │   ├── embedding.py
 │   └── security/pii.py        # log masking filter
-└── tests/
+└── tests/                     # pytest; tests/fixtures/ holds the four bad files
 ```
 
 ## 3. Relational schema (migration 001)
@@ -108,7 +116,7 @@ One row per unique uploaded export file. `content_hash` is the idempotency key.
 | raw_storage_uri | text | `file://data/raw/<hex>.json` |
 | normalised_storage_uri | text null | `file://data/normalised/<hex>.v<normaliser_version>.json` |
 | document_type | text null | check in (`referral_letter`,`medical_certificate`,`receipt`) |
-| country_code | char(2) not null | order: form field → envelope → `SG` (see §12) |
+| country_code | char(2) not null | order: form field → envelope → `SG` (see §11) |
 | ocr_engine | text null | envelope `ocr.engine` |
 | ocr_engine_version | text null | |
 | ocr_processed_at | timestamptz null | |
@@ -201,7 +209,7 @@ document's type gets a row. It is `missing` when not found.
 | page_id | uuid null → document_pages cascade | null for document-level checks |
 | check_name | text | `file_json`, `envelope_valid`, `engine_supported`, `document_type_supported`, `page_confidence`, `field_<name>` |
 | passed | boolean | |
-| severity | text | `error` (blocks the pipeline) / `warning` (flag only); `info` added later (§12) |
+| severity | text | `error` (blocks the pipeline) / `warning` (flag only); `info` added later (§11) |
 | details | jsonb | threshold, observed value, message |
 | run_id | uuid → pipeline_runs | |
 
@@ -261,7 +269,7 @@ Both chosen models are 384. This is listed in the README's Known limitations.
 ### 3.11 View `v_quarantine`
 Documents where `status = 'failed'`, or where any quality check did not pass.
 Shows the error_code, the failed check names and the document's country and type.
-Checks of severity `info` do not count (§12).
+Checks of severity `info` do not count (§11).
 
 ### 3.12 View `v_documents_deidentified` (PII control #2)
 `documents` joined to `extracted_fields`. It shows document metadata and the
@@ -353,7 +361,7 @@ URI is stored on the document. `load` reads this file and never reads raw again.
 
 | stage | on success status | failure error_code |
 |---|---|---|
-| receive (hash, raw store, file+envelope+engine checks) | received | file_missing / unreadable_file / unsupported_ocr_format / invalid_country_code (§12) |
+| receive (hash, raw store, file+envelope+engine checks) | received | file_missing / unreadable_file / unsupported_ocr_format / invalid_country_code (§11) |
 | normalise | normalised | unsupported_ocr_format |
 | load (pages, lines) | loaded | internal_server_error |
 | extract (classify + fields + validation) | extracted | unsupported_document_type |
@@ -432,7 +440,7 @@ Two controls: the log masking filter in `app/security/pii.py`, and the view
 The field names are verbatim from the assignment. Requests, responses, error codes and
 CLI commands are in the [README](../README.md#2-sample-curl-commands-and-cli-usage).
 
-## 10. Tests (minimum)
+## 10. Tests (required set)
 
 1. `test_idempotent_ingest`: ingest the same bytes twice under two filenames →
    one documents row, one set of pages/lines/chunks/embeddings, second response
@@ -446,7 +454,7 @@ CLI commands are in the [README](../README.md#2-sample-curl-commands-and-cli-usa
 5. `test_rejections`: non-JSON bytes → 422 unreadable_file; valid JSON with
    unknown engine → 422 unsupported_ocr_format and a failed documents row exists.
 
-## 12. Decisions made during implementation
+## 11. Decisions made during implementation
 
 - **Amounts in the smallest currency unit.** §6 and the field rules gave conflicting
   examples (`S$1,234.50` → `1234` vs `S$93.20` → `9320`). Amounts are now integers in
