@@ -1,4 +1,4 @@
--- 001_initial: full relational schema from CLAUDE.md section 3.
+-- 001_initial: full relational schema from docs/DESIGN.md section 3.
 -- Conventions: uuid ids via gen_random_uuid(), timestamptz default now(),
 -- bboxes [x0, y0, x1, y1] as fractions of the page in [0, 1], confidences in [0, 1].
 

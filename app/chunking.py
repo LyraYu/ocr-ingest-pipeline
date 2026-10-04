@@ -1,4 +1,4 @@
-"""Line-based chunking (CLAUDE.md §7). Pure functions, no DB access.
+"""Line-based chunking (docs/DESIGN.md §7). Pure functions, no DB access.
 
 Per page, walk lines in reading order and accumulate whole lines until adding the
 next one would push the chunk text (lines joined with "\\n") past MAX_CHARS; then

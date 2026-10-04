@@ -1,6 +1,6 @@
 """OCR export parsing and normalisation.
 
-Errors carry the API error code they map to (CLAUDE.md §4, §9).
+Errors carry the API error code they map to (docs/DESIGN.md §4, §9).
 """
 
 import functools
@@ -15,7 +15,7 @@ NORMALISER_VERSION = "1.1.0"
 
 
 class OcrInputError(PipelineInputError):
-    """`check` names the receive-time quality check that failed (CLAUDE.md §3.7)."""
+    """`check` names the receive-time quality check that failed (docs/DESIGN.md §3.7)."""
 
     check: str = "envelope_valid"
 

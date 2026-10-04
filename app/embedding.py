@@ -1,4 +1,4 @@
-"""sentence-transformers wrapper (CLAUDE.md §7).
+"""sentence-transformers wrapper (docs/DESIGN.md §7).
 
 Models are resolved through the Hugging Face cache first (no network), and only
 downloaded when absent; the default model is baked into the image. `model_version`

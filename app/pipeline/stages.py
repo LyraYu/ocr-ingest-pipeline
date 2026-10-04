@@ -1,4 +1,4 @@
-"""Pipeline stages (CLAUDE.md §5).
+"""Pipeline stages (docs/DESIGN.md §5).
 
 `stage_receive` creates the document, so it takes the uploaded bytes instead of
 a document_id. Every later stage is `stage_x(conn, document_id, run_id) -> None`,
@@ -519,7 +519,7 @@ def embed_documents(
     fail_document: bool = True,
 ) -> dict[UUID, str | None]:
     """stage_embed for many documents with one encode call for all their chunks
-    (CLAUDE.md §7: batch encode all chunk texts of a run in one call).
+    (docs/DESIGN.md §7: batch encode all chunk texts of a run in one call).
     Returns document_id → error_code (None on success)."""
     precomputed: dict[UUID, list[float]] = {}
     if document_ids:

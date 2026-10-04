@@ -1,4 +1,4 @@
-"""Field rules per document type (CLAUDE.md §6, §6.1) and the pure extractor.
+"""Field rules per document type (docs/DESIGN.md §6, §6.1) and the pure extractor.
 
 FIELD_RULES[document_type] is a dict field_name → (regex, value_type). Its keys
 are exactly the §6.1 field list for that type: every key gets an extracted_fields

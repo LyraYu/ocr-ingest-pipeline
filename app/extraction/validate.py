@@ -1,4 +1,4 @@
-"""Value validation and normalisation (CLAUDE.md §6, §6.1). Pure functions.
+"""Value validation and normalisation (docs/DESIGN.md §6, §6.1). Pure functions.
 
 Each parser takes the raw OCR string and returns the normalised value or raises
 ValueError. Messages never echo the raw value (it may be PII; raw_value is

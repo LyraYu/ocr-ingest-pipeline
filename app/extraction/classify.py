@@ -1,4 +1,4 @@
-"""document_type from the concatenated page text (CLAUDE.md §6).
+"""document_type from the concatenated page text (docs/DESIGN.md §6).
 
 Every type's keywords live in KEYWORDS; adding a type is one entry here (plus its
 rules in rules.py). Matching is case-insensitive on whole words, and a phrase may

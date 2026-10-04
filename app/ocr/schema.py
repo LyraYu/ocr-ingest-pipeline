@@ -1,4 +1,4 @@
-"""Pydantic models for the normalised OCR JSON (CLAUDE.md §4)."""
+"""Pydantic models for the normalised OCR JSON (docs/DESIGN.md §4)."""
 
 from datetime import datetime
 from typing import Annotated, Literal

@@ -19,7 +19,7 @@ app = typer.Typer(no_args_is_help=True, add_completion=False)
 @app.callback()
 def main() -> None:
     """Document ingestion pipeline."""
-    pii.install()  # PII masking on every log handler (CLAUDE.md §8)
+    pii.install()  # PII masking on every log handler (docs/DESIGN.md §8)
 
 
 @app.command()

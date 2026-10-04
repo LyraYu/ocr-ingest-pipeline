@@ -1,6 +1,6 @@
 """Raw and normalised zones on local disk.
 
-URIs are stored as `file://data/<zone>/<name>` (CLAUDE.md §3.2): relative to the
+URIs are stored as `file://data/<zone>/<name>` (docs/DESIGN.md §3.2): relative to the
 logical data root, which maps to the configured DATA_DIR at read/write time.
 """
 

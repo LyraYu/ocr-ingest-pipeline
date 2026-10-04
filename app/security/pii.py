@@ -1,4 +1,4 @@
-"""Log masking (CLAUDE.md §8, PII control #1).
+"""Log masking (docs/DESIGN.md §8, PII control #1).
 
 `PiiMaskingFilter` rewrites every log record before it is emitted:
 - NRIC/FIN-like ids (`[STFG]\\d{7}[A-Z]`)

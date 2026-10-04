@@ -41,7 +41,7 @@ class IngestResult:
         return "duplicate" if self.duplicate else "processed"
 
     def response_body(self) -> dict:
-        """The POST /documents success body (CLAUDE.md §9)."""
+        """The POST /documents success body (docs/DESIGN.md §9)."""
         return {
             "document_id": str(self.document_id),
             "content_hash": self.content_hash,

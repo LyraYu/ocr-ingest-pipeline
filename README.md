@@ -348,7 +348,8 @@ Example: `discharge_summary`.
    If the type has claimant fields with new names, add them to the exclusion list of
    `v_documents_deidentified` (`create or replace view`).
 5. **`app/api/search.py`**: add the type to the `document_type` filter's `Literal`.
-6. **`CLAUDE.md` §6.1**: add the type and its field list.
+6. **Docs**: add the type and its field list to "Fields per document type" in section 8 of
+   this README, and to `docs/DESIGN.md` §6.1.
 7. **Tests**: a sample export, and a case in `tests/test_extraction.py`.
 
 No table changes are needed.
@@ -379,7 +380,8 @@ Example: Google Document AI, engine name `google-document-ai`.
 
    `test_wrong_engine_raw_output_is_rejected` is parametrised over `ENGINES` and picks up
    the new engine automatically.
-6. **`CLAUDE.md` §4**: document the engine's rules.
+6. **Docs**: add the engine's rules to the per-engine table in section 4 of this README,
+   and to `docs/DESIGN.md` §4.
 
 Nothing downstream changes: `load` and every later stage read only the normalised JSON.
 
@@ -421,9 +423,20 @@ delete from embedding_models where model_name = 'sentence-transformers/all-MiniL
 
 ### Extraction and validation
 
-Field rules for each document type are listed in CLAUDE.md §6.1. Each field is stored with
-`validation_status` `valid`, `invalid` (the raw value is kept and a message is set) or
-`missing`. Normalised values are:
+Every field in the type's list gets an `extracted_fields` row, with `validation_status`
+`valid`, `invalid` (the raw value is kept and a message is set) or `missing`.
+
+#### Fields per document type
+
+| document type | fields |
+|---|---|
+| `referral_letter` | `claimant_name`, `provider_name`, `signature_presence` (bool), `total_amount_paid`, `total_approved_amount`, `total_requested_amount` |
+| `medical_certificate` | `claimant_name`, `claimant_address`, `claimant_date_of_birth`, `diagnosis_name`, `discharge_date_time`, `icd_code`, `provider_name`, `submission_date_time`, `date_of_mc`, `mc_days` (int) |
+| `receipt` | `claimant_name`, `claimant_address`, `claimant_date_of_birth`, `provider_name`, `tax_amount`, `total_amount` |
+
+The lists are the keys of `FIELD_RULES` in `app/extraction/rules.py`.
+
+#### Normalised values
 
 | value | normalised form |
 |---|---|
